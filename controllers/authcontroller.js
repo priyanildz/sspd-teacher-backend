@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
-  const { name, username, password, dob, email, contact, role, standard, division } = req.body;
+  const { name, username, password, dob, emailaddress, contact, role, standard, division } = req.body;
 
   try {
     // Check if user already exists by username or email
@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
       // password: hashedPassword,
       password: password,
       dob,
-      email,
+      emailaddress,
       contact,
       role,
       classAssigned: role === "teacher" ? { standard, division } : { standard: "N/A", division: "N/A" },
@@ -127,7 +127,7 @@ if (password !== user.password) {
         name: user.name,
         username: user.username,
         dob: user.dob,
-        email: user.email,
+        emailaddress: user.emailaddress,
         contact: user.contact,
         role: user.role,
         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
