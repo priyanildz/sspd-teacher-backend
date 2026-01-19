@@ -37,9 +37,36 @@ exports.register = async (req, res) => {
   }
 };
 
+// exports.getProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.userId).select("-password"); // Exclude password
+
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: "User not found" });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       user: {
+//         name: user.name,
+//         username: user.username,
+//         dob: user.dob,
+//         email: user.email,
+//         contact: user.contact,
+//         role: user.role,
+//         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" }, // Ensure object structure
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Profile Fetch Error:", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select("-password"); // Exclude password
+    // We use the ID extracted from the JWT token
+    const user = await User.findById(req.user.userId).select("-password");
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -48,13 +75,13 @@ exports.getProfile = async (req, res) => {
     res.status(200).json({
       success: true,
       user: {
-        name: user.name,
-        username: user.username,
+        name: user.name || user.firstname, // Fallback if name isn't set but firstname is
+        username: user.staffid, // Use staffid as the display username
         dob: user.dob,
         email: user.email,
-        contact: user.contact,
-        role: user.role,
-        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" }, // Ensure object structure
+        contact: user.phoneno || user.contact, // Database uses 'phoneno'
+        role: user.role || "teacher",
+        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },
     });
   } catch (error) {
