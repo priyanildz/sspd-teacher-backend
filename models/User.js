@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String }, // You can keep this for compatibility
   password: { type: String, required: true },
   dob: { type: String },
-  email: { type: String, unique: true },
+  emailaddress: { type: String, unique: true },
   phoneno: { type: String }, // Matches 'phoneno' in image_311c8f.png
   role: { type: String, default: "teacher" },
   classAssigned: {
