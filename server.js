@@ -10,7 +10,8 @@ const { Server } = require("socket.io");
 const Message = require('./models/Message');
 const mySubjectRoutes = require("./routes/mySubjectRoutes");
 const timetableRoutes = require('./routes/timetableRoutes');
-const announcementRoutes = require('./enabled-announcementRoutes');
+// const announcementRoutes = require('./enabled-announcementRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
 const messageRoutes= require('./routes/messageRoutes')
 const teacherRoutes = require("./routes/teacherRoutes");
 
