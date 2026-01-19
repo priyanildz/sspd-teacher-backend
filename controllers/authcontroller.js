@@ -78,7 +78,7 @@ exports.getProfile = async (req, res) => {
         name: user.name || user.firstname, // Fallback if name isn't set but firstname is
         username: user.staffid, // Use staffid as the display username
         dob: user.dob,
-        email: user.email,
+        emailaddress: user.emailaddress,
         contact: user.phoneno || user.contact, // Database uses 'phoneno'
         role: user.role || "teacher",
         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
