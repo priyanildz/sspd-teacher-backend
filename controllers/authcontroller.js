@@ -1,5 +1,4 @@
 const User = require("../models/User");
-const Classroom = require("../models/Classroom");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -37,6 +36,32 @@ exports.register = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+// exports.getProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.userId).select("-password"); // Exclude password
+
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: "User not found" });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       user: {
+//         name: user.name,
+//         username: user.username,
+//         dob: user.dob,
+//         email: user.email,
+//         contact: user.contact,
+//         role: user.role,
+//         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" }, // Ensure object structure
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Profile Fetch Error:", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
 
 exports.getProfile = async (req, res) => {
   try {
