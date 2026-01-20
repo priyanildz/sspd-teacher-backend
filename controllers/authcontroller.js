@@ -65,21 +65,26 @@ exports.register = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    // We use the ID extracted from the JWT token
     const user = await User.findById(req.user.userId).select("-password");
-
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-
+    let formattedDOB = "N/A";
+    if (user.dob) {
+      const dateObj = new Date(user.dob);
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+      const year = dateObj.getFullYear();
+      formattedDOB = `${day}/${month}/${year}`;
+    }
     res.status(200).json({
       success: true,
       user: {
-        name: user.name || user.firstname, // Fallback if name isn't set but firstname is
-        username: user.staffid, // Use staffid as the display username
-        dob: user.dob,
+        name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`, 
+        username: user.staffid, 
+        dob: formatteDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact, // Database uses 'phoneno'
+        contact: user.phoneno || user.contact, 
         role: user.role || "teacher",
         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },
