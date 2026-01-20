@@ -69,6 +69,10 @@ exports.getProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    // ✅ NEW: Look up the classroom assigned to this teacher's MongoDB _id
+    const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
+
     let formattedDOB = "N/A";
     if (user.dob) {
       const dateObj = new Date(user.dob);
@@ -77,6 +81,7 @@ exports.getProfile = async (req, res) => {
       const year = dateObj.getFullYear();
       formattedDOB = `${day}/${month}/${year}`;
     }
+
     res.status(200).json({
       success: true,
       user: {
@@ -86,7 +91,11 @@ exports.getProfile = async (req, res) => {
         emailaddress: user.emailaddress,
         contact: user.phoneno || user.contact, // Database uses 'phoneno'
         role: user.role || "teacher",
-        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
+        // ✅ Use data from the classroom lookup if found, otherwise default to N/A
+        classAssigned: classroom ? { 
+          standard: classroom.standard, 
+          division: classroom.division 
+        } : { standard: "N/A", division: "N/A" },
       },
     });
   } catch (error) {
