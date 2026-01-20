@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
+const Classroom = require("../models/Classroom");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
