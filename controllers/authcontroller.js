@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-const Classroom = require("../models/Classroom");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
@@ -67,23 +66,32 @@ exports.register = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
+    // 1. Ensure the 'classroom' model is registered before using it
+    if (!mongoose.models.classroom) {
+      mongoose.model("classroom", new mongoose.Schema({
+        standard: String,
+        division: String,
+        staffid: mongoose.Schema.Types.ObjectId
+      }), "classrooms"); // Points exactly to the 'classrooms' collection
+    }
+
+    // 2. Fetch user from 'staffs' collection
     const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // ✅ This will now work because the Classroom model is registered above
+    // 3. Look up assigned class using the teacher's unique _id
     const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
 
+    // 4. Format Date
     let formattedDOB = "N/A";
     if (user.dob) {
       const dateObj = new Date(user.dob);
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const year = dateObj.getFullYear();
-      formattedDOB = `${day}/${month}/${year}`;
+      formattedDOB = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
     }
 
+    // 5. Send data to Flutter
     res.status(200).json({
       success: true,
       user: {
@@ -91,9 +99,10 @@ exports.getProfile = async (req, res) => {
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact,
+        contact: user.phoneno || user.contact, 
         photo: user.photo,
         role: user.role || "teacher",
+        // ✅ Returns the Admin's classroom data (e.g., "1 - A")
         classAssigned: classroom ? { 
           standard: classroom.standard, 
           division: classroom.division 
