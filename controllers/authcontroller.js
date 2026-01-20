@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Classroom = require("../models/Classroom");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -37,46 +38,22 @@ exports.register = async (req, res) => {
   }
 };
 
-// exports.getProfile = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user.userId).select("-password"); // Exclude password
-
-//     if (!user) {
-//       return res.status(404).json({ success: false, message: "User not found" });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       user: {
-//         name: user.name,
-//         username: user.username,
-//         dob: user.dob,
-//         email: user.email,
-//         contact: user.contact,
-//         role: user.role,
-//         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" }, // Ensure object structure
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Profile Fetch Error:", error);
-//     res.status(500).json({ success: false, message: "Internal server error" });
-//   }
-// };
-
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    // ✅ Look for classroom assignment by the teacher's staffid (e.g., STF-PR-1-8309)
+    const classroom = await mongoose.model("classroom").findOne({ staffid: user.staffid });
+
     let formattedDOB = "N/A";
     if (user.dob) {
       const dateObj = new Date(user.dob);
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-      const year = dateObj.getFullYear();
-      formattedDOB = `${day}/${month}/${year}`;
+      formattedDOB = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
     }
+
     res.status(200).json({
       success: true,
       user: {
@@ -84,13 +61,17 @@ exports.getProfile = async (req, res) => {
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact, // Database uses 'phoneno'
+        contact: user.phoneno || user.contact,
+        photo: user.photo, // ✅ MUST send this for Flutter image to work
         role: user.role || "teacher",
-        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
+        classAssigned: classroom ? { 
+          standard: classroom.standard, 
+          division: classroom.division 
+        } : { standard: "Not Assigned", division: "" }
       },
     });
   } catch (error) {
-    console.error("Profile Fetch Error:", error);
+    console.error("Profile Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

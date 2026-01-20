@@ -21,24 +21,24 @@
 // // module.exports = mongoose.model("User", userSchema);
 // module.exports = mongoose.model("staff", userSchema);
 
-
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  staffid: { type: String, required: true, unique: true }, // Matches image_311c8f.png
+  staffid: { type: String, required: true, unique: true },
   firstname: { type: String }, 
   middlename: { type: String },
   lastname: { type: String },
-  name: { type: String }, // You can keep this for compatibility
+  name: { type: String },
   password: { type: String, required: true },
   dob: { type: String },
-  emailaddress: { type: String, unique: true },
-  phoneno: { type: String }, // Matches 'phoneno' in image_311c8f.png
+  emailaddress: { type: String }, 
+  phoneno: { type: String }, 
+  photo: { type: String }, // ✅ CORRECTED: This must be String to store the URL
   role: { type: String, default: "teacher" },
   classAssigned: {
     standard: { type: String, default: "N/A" },
     division: { type: String, default: "N/A" },
   }
-}, { collection: 'staffs' }); // Explicitly tell it to use the 'staffs' collection
+}, { collection: 'staffs' }); 
 
 module.exports = mongoose.model("staff", userSchema);
