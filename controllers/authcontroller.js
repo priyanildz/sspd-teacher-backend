@@ -82,9 +82,9 @@ exports.getProfile = async (req, res) => {
       user: {
         name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`, 
         username: user.staffid, 
-        dob: formatteDOB,
+        dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact, 
+        contact: user.phoneno || user.contact, // Database uses 'phoneno'
         role: user.role || "teacher",
         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },
