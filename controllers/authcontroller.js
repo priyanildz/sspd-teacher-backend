@@ -72,7 +72,7 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // ✅ FETCH ASSIGNED CLASS: Look up in the classrooms collection
+    // ✅ This will now work because the Classroom model is registered above
     const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
 
     let formattedDOB = "N/A";
@@ -91,9 +91,9 @@ exports.getProfile = async (req, res) => {
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact, 
+        contact: user.phoneno || user.contact,
+        photo: user.photo,
         role: user.role || "teacher",
-        // ✅ Map classroom data to classAssigned
         classAssigned: classroom ? { 
           standard: classroom.standard, 
           division: classroom.division 
