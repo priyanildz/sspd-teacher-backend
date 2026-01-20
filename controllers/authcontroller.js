@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
@@ -69,14 +70,19 @@ exports.getProfile = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    // ✅ FETCH ASSIGNED CLASS: Look up in the classrooms collection
+    const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
+
     let formattedDOB = "N/A";
     if (user.dob) {
       const dateObj = new Date(user.dob);
       const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
       const year = dateObj.getFullYear();
       formattedDOB = `${day}/${month}/${year}`;
     }
+
     res.status(200).json({
       success: true,
       user: {
@@ -84,9 +90,13 @@ exports.getProfile = async (req, res) => {
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact, // Database uses 'phoneno'
+        contact: user.phoneno || user.contact, 
         role: user.role || "teacher",
-        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
+        // ✅ Map classroom data to classAssigned
+        classAssigned: classroom ? { 
+          standard: classroom.standard, 
+          division: classroom.division 
+        } : { standard: "N/A", division: "N/A" },
       },
     });
   } catch (error) {
