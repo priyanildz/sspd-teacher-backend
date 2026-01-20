@@ -105,35 +105,73 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// exports.login = async (req, res) => {
+//   const { username, password } = req.body;
+
+//   try {
+//     // Find user in database
+//     const user = await User.findOne({ staffid: username });
+//     if (!user) {
+//       return res.status(401).json({ success: false, message: "Invalid credentials" });
+//     }
+
+//     // Check password
+//     // const passwordMatch = await bcrypt.compare(password, user.password);
+//     // if (!passwordMatch) {
+//     //   return res.status(401).json({ success: false, message: "Invalid credentials" });
+//     // }
+
+//     // Check password (Simple text comparison)
+// if (password !== user.password) {
+//   return res.status(401).json({ success: false, message: "Invalid credentials" });
+// }
+
+//     // Generate JWT Token
+//     const token = jwt.sign(
+//       { userId: user._id, role: user.role },
+//       process.env.JWT_SECRET || "defaultsecret",
+//       { expiresIn: "1h" }
+//     );
+
+//     // Send response
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       token,
+//       user: {
+//         name: user.name,
+//         username: user.username,
+//         dob: user.dob,
+//         emailaddress: user.emailaddress,
+//         contact: user.contact,
+//         role: user.role,
+//         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Login Error:", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
+
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-
   try {
-    // Find user in database
     const user = await User.findOne({ staffid: username });
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
+    if (password !== user.password) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
-    // Check password
-    // const passwordMatch = await bcrypt.compare(password, user.password);
-    // if (!passwordMatch) {
-    //   return res.status(401).json({ success: false, message: "Invalid credentials" });
-    // }
-
-    // Check password (Simple text comparison)
-if (password !== user.password) {
-  return res.status(401).json({ success: false, message: "Invalid credentials" });
-}
-
-    // Generate JWT Token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET || "defaultsecret",
       { expiresIn: "1h" }
     );
 
-    // Send response
     res.status(200).json({
       success: true,
       message: "Login successful",
