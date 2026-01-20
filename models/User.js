@@ -34,7 +34,6 @@ const userSchema = new mongoose.Schema({
   dob: { type: String },
   emailaddress: { type: String, unique: true },
   phoneno: { type: String }, // Matches 'phoneno' in image_311c8f.png
-  photo: user.photo,
   role: { type: String, default: "teacher" },
   classAssigned: {
     standard: { type: String, default: "N/A" },

@@ -41,7 +41,6 @@ exports.register = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
-    const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
@@ -62,10 +61,7 @@ exports.getProfile = async (req, res) => {
         emailaddress: user.emailaddress,
         contact: user.phoneno || user.contact, // Database uses 'phoneno'
         role: user.role || "teacher",
-        classAssigned: classroom ? { 
-          standard: classroom.standard, 
-          division: classroom.division 
-        } : { standard: "N/A", division: "N/A" }
+        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },
     });
   } catch (error) {
