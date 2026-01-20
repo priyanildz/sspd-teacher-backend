@@ -154,6 +154,7 @@ if (password !== user.password) {
         dob: user.dob,
         emailaddress: user.emailaddress,
         contact: user.contact,
+        photo: user.photo,
         role: user.role,
         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },

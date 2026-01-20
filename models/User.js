@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   dob: { type: String },
   emailaddress: { type: String, unique: true },
+  photo: { type: String },
   phoneno: { type: String }, // Matches 'phoneno' in image_311c8f.png
   role: { type: String, default: "teacher" },
   classAssigned: {
