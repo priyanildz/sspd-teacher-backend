@@ -1,5 +1,4 @@
 const User = require("../models/User");
-const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -66,27 +65,18 @@ exports.register = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    // 1. Fetch the user from the staffs collection using ID from JWT
     const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-
-    // 2. Look up the assigned classroom
-    // We search the 'classrooms' collection for a document where staffid matches this user's _id
-    const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
-
-    // 3. Format the Date of Birth
     let formattedDOB = "N/A";
     if (user.dob) {
       const dateObj = new Date(user.dob);
       const day = String(dateObj.getDate()).padStart(2, '0');
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
       const year = dateObj.getFullYear();
       formattedDOB = `${day}/${month}/${year}`;
     }
-
-    // 4. Send the complete profile data back to Flutter
     res.status(200).json({
       success: true,
       user: {
@@ -94,14 +84,9 @@ exports.getProfile = async (req, res) => {
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact,
-        photo: user.photo,
+        contact: user.phoneno || user.contact, // Database uses 'phoneno'
         role: user.role || "teacher",
-        // ✅ This will now return the actual class (e.g., 1 - A) instead of N/A
-        classAssigned: classroom ? { 
-          standard: classroom.standard, 
-          division: classroom.division 
-        } : { standard: "N/A", division: "N/A" },
+        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },
     });
   } catch (error) {
