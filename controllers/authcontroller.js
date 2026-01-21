@@ -167,31 +167,30 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Register Admin's model dynamically if it doesn't exist
+    // 1. Register Admin's model dynamically with correct types
     if (!mongoose.models.subjectallocation) {
       mongoose.model("subjectallocation", new mongoose.Schema({
-        teacher: mongoose.Schema.Types.ObjectId,
+        teacher: mongoose.Schema.Types.ObjectId, // Match DB type
         subjects: [String],
         standards: [String],
         divisions: [String]
-      }), "subjectallocations"); // Points to the Admin's collection
+      }), "subjectallocations"); // Points to Admin collection
     }
 
-    // 2. Search using ObjectId conversion to match Database type
+    // 2. SEARCH FIX: Force the string ID into a proper ObjectId
     const allocation = await mongoose.model("subjectallocation").findOne({ 
       teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
 
     if (!allocation) {
-      return res.status(200).json({ success: true, subjects: [] });
+      return res.status(200).json({ success: false, message: "No subjects found" });
     }
 
-    // 3. Transform Admin's arrays into a list of objects for Flutter
-    // We map through the subjects array and pick the corresponding standard/division
+    // 3. TRANSFORM: Map arrays into a format Flutter can display easily
     const formattedSubjects = allocation.subjects.map((sub, index) => ({
       subject_name: sub,
-      standard: allocation.standards[index] || allocation.standards[0] || "N/A",
-      // Join divisions array (A, B, C...) into a string for the table
+      standard: allocation.standards[index] || "N/A",
+      // Join divisions array into a single string (e.g., "A, B, C")
       division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
     }));
 
