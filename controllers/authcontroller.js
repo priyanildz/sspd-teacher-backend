@@ -167,32 +167,36 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Ensure Admin's subjectallocation model is registered
+    // 1. Ensure Admin's subjectallocation model is registered exactly
     if (!mongoose.models.subjectallocation) {
       mongoose.model("subjectallocation", new mongoose.Schema({
-        teacher: mongoose.Schema.Types.ObjectId,
+        teacher: mongoose.Schema.Types.Mixed, // ✅ Use Mixed to handle both String and ObjectId
         subjects: [String],
         standards: [String],
         divisions: [String],
         teacherName: String
-      }), "subjectallocations"); // Points to the Admin's collection
+      }), "subjectallocations");
     }
 
-    // 2. Find the allocation for the current logged-in teacher
+    // 2. Search using BOTH possible ID types to be safe
+    const userId = req.user.userId;
     const allocation = await mongoose.model("subjectallocation").findOne({ 
-      teacher: req.user.userId 
+      $or: [
+        { teacher: userId }, 
+        { teacher: new mongoose.Types.ObjectId(userId) }
+      ] 
     });
 
     if (!allocation) {
       return res.status(200).json({ success: true, subjects: [] });
     }
 
-    // 3. Transform Admin's arrays into the format your Flutter table expects
-    // Since Admin uses separate arrays, we combine them into a list of objects
+    // 3. Format the arrays into a flat list for Flutter
     const formattedSubjects = allocation.subjects.map((sub, index) => ({
       subject_name: sub,
-      standard: allocation.standards[0] || "N/A", // Admin stores standards in an array
-      division: allocation.divisions.join(", ")   // Admin stores divisions in an array
+      // Fallback logic if arrays have different lengths
+      standard: allocation.standards[index] || allocation.standards[0] || "N/A",
+      division: allocation.divisions[index] || allocation.divisions.join(", ")
     }));
 
     res.status(200).json({
