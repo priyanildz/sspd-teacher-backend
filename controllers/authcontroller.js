@@ -167,42 +167,33 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Ensure Admin's subjectallocation model is registered exactly
+    // 1. Ensure model registration (keep your existing schema registration here)
     if (!mongoose.models.subjectallocation) {
       mongoose.model("subjectallocation", new mongoose.Schema({
-        teacher: mongoose.Schema.Types.Mixed, // ✅ Use Mixed to handle both String and ObjectId
+        teacher: mongoose.Schema.Types.ObjectId, // ✅ Ensure this is ObjectId
         subjects: [String],
         standards: [String],
-        divisions: [String],
-        teacherName: String
+        divisions: [String]
       }), "subjectallocations");
     }
 
-    // 2. Search using BOTH possible ID types to be safe
-    const userId = req.user.userId;
+    // 2. SEARCH FIX: Convert the string ID from the token into a real ObjectId
     const allocation = await mongoose.model("subjectallocation").findOne({ 
-      $or: [
-        { teacher: userId }, 
-        { teacher: new mongoose.Types.ObjectId(userId) }
-      ] 
+      teacher: new mongoose.Types.ObjectId(req.user.userId) // ✅ THIS IS THE CRITICAL FIX
     });
 
     if (!allocation) {
-      return res.status(200).json({ success: true, subjects: [] });
+      return res.status(200).json({ success: false, message: "No subjects found" });
     }
 
-    // 3. Format the arrays into a flat list for Flutter
+    // 3. Mapping logic (keep your current mapping logic)
     const formattedSubjects = allocation.subjects.map((sub, index) => ({
       subject_name: sub,
-      // Fallback logic if arrays have different lengths
-      standard: allocation.standards[index] || allocation.standards[0] || "N/A",
-      division: allocation.divisions[index] || allocation.divisions.join(", ")
+      standard: allocation.standards[index] || "N/A",
+      division: allocation.divisions[index] || "N/A"
     }));
 
-    res.status(200).json({
-      success: true,
-      subjects: formattedSubjects
-    });
+    res.status(200).json({ success: true, subjects: formattedSubjects });
   } catch (error) {
     console.error("Subject Fetch Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
