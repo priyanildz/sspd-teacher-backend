@@ -115,91 +115,35 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// exports.login = async (req, res) => {
-//   const { username, password } = req.body;
-
-//   try {
-//     // Find user in database
-//     const user = await User.findOne({ staffid: username });
-//     if (!user) {
-//       return res.status(401).json({ success: false, message: "Invalid credentials" });
-//     }
-
-//     // Check password
-//     // const passwordMatch = await bcrypt.compare(password, user.password);
-//     // if (!passwordMatch) {
-//     //   return res.status(401).json({ success: false, message: "Invalid credentials" });
-//     // }
-
-//     // Check password (Simple text comparison)
-//     if (password !== user.password) {
-//       return res.status(401).json({ success: false, message: "Invalid credentials" });
-//     }
-
-//     // Generate JWT Token
-//     const token = jwt.sign(
-//       { userId: user._id, role: user.role },
-//       process.env.JWT_SECRET || "defaultsecret",
-//       { expiresIn: "1h" }
-//     );
-
-//     // Send response
-//     res.status(200).json({
-//       success: true,
-//       message: "Login successful",
-//       token,
-//       user: {
-//         name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`,
-//         username: user.staffid,
-//         dob: user.dob,
-//         emailaddress: user.emailaddress,
-//         contact: user.contact,
-//         photo: user.photo,
-//         role: user.role,
-//         classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Login Error:", error);
-//     res.status(500).json({ success: false, message: "Internal server error" });
-//   }
-// };
-
 exports.login = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // 1. Find user in database
+    // Find user in database
     const user = await User.findOne({ staffid: username });
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // 2. Check password (Simple text comparison as per your current code)
+    // Check password
+    // const passwordMatch = await bcrypt.compare(password, user.password);
+    // if (!passwordMatch) {
+    //   return res.status(401).json({ success: false, message: "Invalid credentials" });
+    // }
+
+    // Check password (Simple text comparison)
     if (password !== user.password) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    // 3. Register 'classroom' model if not already done to fetch assignments
-    if (!mongoose.models.classroom) {
-      mongoose.model("classroom", new mongoose.Schema({
-        standard: String,
-        division: String,
-        staffid: mongoose.Schema.Types.ObjectId
-      }), "classrooms");
-    }
-
-    // 4. Look up the assigned class for this user immediately during login
-    const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
-
-    // 5. Generate JWT Token
+    // Generate JWT Token
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET || "defaultsecret",
       { expiresIn: "1h" }
     );
 
-    // 6. Send response with correctly populated classAssigned data
+    // Send response
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -212,11 +156,7 @@ exports.login = async (req, res) => {
         contact: user.contact,
         photo: user.photo,
         role: user.role,
-        // ✅ FETCHED DATA: Now provides real standard/division from the classrooms collection
-        classAssigned: classroom ? {
-          standard: classroom.standard,
-          division: classroom.division
-        } : (user.classAssigned || { standard: "N/A", division: "N/A" }),
+        classAssigned: user.classAssigned || { standard: "N/A", division: "N/A" },
       },
     });
   } catch (error) {
