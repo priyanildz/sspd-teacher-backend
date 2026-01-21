@@ -167,26 +167,28 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Ensure model registration (keep your existing schema registration here)
+    // 1. Ensure model is registered (keep your schema as is)
     if (!mongoose.models.subjectallocation) {
       mongoose.model("subjectallocation", new mongoose.Schema({
-        teacher: mongoose.Schema.Types.ObjectId, // ✅ Ensure this is ObjectId
+        teacher: mongoose.Schema.Types.ObjectId,
         subjects: [String],
         standards: [String],
-        divisions: [String]
+        divisions: [String],
+        teacherName: String
       }), "subjectallocations");
     }
 
-    // 2. SEARCH FIX: Convert the string ID from the token into a real ObjectId
+    // 2. CRITICAL FIX: Convert string userId to ObjectId
     const allocation = await mongoose.model("subjectallocation").findOne({ 
-      teacher: new mongoose.Types.ObjectId(req.user.userId) // ✅ THIS IS THE CRITICAL FIX
+      teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
 
     if (!allocation) {
+      // This part currently triggers because the query failed to match types
       return res.status(200).json({ success: false, message: "No subjects found" });
     }
 
-    // 3. Mapping logic (keep your current mapping logic)
+    // 3. Format data (keep your current mapping logic)
     const formattedSubjects = allocation.subjects.map((sub, index) => ({
       subject_name: sub,
       standard: allocation.standards[index] || "N/A",
