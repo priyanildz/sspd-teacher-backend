@@ -163,3 +163,26 @@ if (password !== user.password) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+exports.getMySubjects = async (req, res) => {
+  try {
+    // req.user.userId is the teacher's ID from the JWT token
+    const subjects = await MySubject.findOne({ user_id: req.user.userId });
+
+    if (!subjects) {
+      return res.status(200).json({ 
+        success: true, 
+        subjects: [], 
+        message: "No subjects assigned yet." 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      subjects: subjects.subjects // ✅ Return just the array of subjects
+    });
+  } catch (error) {
+    console.error("Fetch Subjects Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
