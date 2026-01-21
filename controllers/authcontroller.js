@@ -167,30 +167,36 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Register Admin's model dynamically with correct types
+    // 1. Get the Admin DB connection (Assuming it's defined in your db config)
+    // If you don't have a separate connection variable, Mongoose uses the default one.
+    // Ensure your .env MONGO_URI points to the cluster where 'subjectallocations' exists.
+
+    // 2. Register Admin's model dynamically with correct types if not exists
     if (!mongoose.models.subjectallocation) {
       mongoose.model("subjectallocation", new mongoose.Schema({
-        teacher: mongoose.Schema.Types.ObjectId, // Match DB type
+        teacher: mongoose.Schema.Types.ObjectId, // ✅ Must be ObjectId
         subjects: [String],
         standards: [String],
         divisions: [String]
-      }), "subjectallocations"); // Points to Admin collection
+      }), "subjectallocations"); // ✅ Explicit collection name
     }
 
-    // 2. SEARCH FIX: Force the string ID into a proper ObjectId
+    // 3. Convert string ID from JWT to ObjectId for matching
+    const teacherId = new mongoose.Types.ObjectId(req.user.userId);
+
     const allocation = await mongoose.model("subjectallocation").findOne({ 
-      teacher: new mongoose.Types.ObjectId(req.user.userId) 
+      teacher: teacherId 
     });
 
     if (!allocation) {
       return res.status(200).json({ success: false, message: "No subjects found" });
     }
 
-    // 3. TRANSFORM: Map arrays into a format Flutter can display easily
+    // 4. Map the Admin arrays (Subjects, Standards, Divisions) into a list for Flutter
     const formattedSubjects = allocation.subjects.map((sub, index) => ({
       subject_name: sub,
       standard: allocation.standards[index] || "N/A",
-      // Join divisions array into a single string (e.g., "A, B, C")
+      // Join divisions array into a readable string like "A, B, C"
       division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
     }));
 
