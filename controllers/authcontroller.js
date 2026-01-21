@@ -167,35 +167,38 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Ensure model is registered (keep your schema as is)
+    // 1. Register Admin's model dynamically if it doesn't exist
     if (!mongoose.models.subjectallocation) {
       mongoose.model("subjectallocation", new mongoose.Schema({
         teacher: mongoose.Schema.Types.ObjectId,
         subjects: [String],
         standards: [String],
-        divisions: [String],
-        teacherName: String
-      }), "subjectallocations");
+        divisions: [String]
+      }), "subjectallocations"); // Points to the Admin's collection
     }
 
-    // 2. CRITICAL FIX: Convert string userId to ObjectId
+    // 2. Search using ObjectId conversion to match Database type
     const allocation = await mongoose.model("subjectallocation").findOne({ 
       teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
 
     if (!allocation) {
-      // This part currently triggers because the query failed to match types
-      return res.status(200).json({ success: false, message: "No subjects found" });
+      return res.status(200).json({ success: true, subjects: [] });
     }
 
-    // 3. Format data (keep your current mapping logic)
+    // 3. Transform Admin's arrays into a list of objects for Flutter
+    // We map through the subjects array and pick the corresponding standard/division
     const formattedSubjects = allocation.subjects.map((sub, index) => ({
       subject_name: sub,
-      standard: allocation.standards[index] || "N/A",
-      division: allocation.divisions[index] || "N/A"
+      standard: allocation.standards[index] || allocation.standards[0] || "N/A",
+      // Join divisions array (A, B, C...) into a string for the table
+      division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
     }));
 
-    res.status(200).json({ success: true, subjects: formattedSubjects });
+    res.status(200).json({
+      success: true,
+      subjects: formattedSubjects
+    });
   } catch (error) {
     console.error("Subject Fetch Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
