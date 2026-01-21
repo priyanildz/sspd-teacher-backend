@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-const MySubject = require("../models/MySubject");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
@@ -96,17 +95,17 @@ exports.getProfile = async (req, res) => {
     res.status(200).json({
       success: true,
       user: {
-        name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`, 
-        username: user.staffid, 
+        name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`,
+        username: user.staffid,
         dob: formattedDOB,
         emailaddress: user.emailaddress,
-        contact: user.phoneno || user.contact, 
+        contact: user.phoneno || user.contact,
         photo: user.photo,
         role: user.role || "teacher",
         // ✅ Returns the Admin's classroom data (e.g., "1 - A")
-        classAssigned: classroom ? { 
-          standard: classroom.standard, 
-          division: classroom.division 
+        classAssigned: classroom ? {
+          standard: classroom.standard,
+          division: classroom.division
         } : { standard: "N/A", division: "N/A" },
       },
     });
@@ -133,9 +132,9 @@ exports.login = async (req, res) => {
     // }
 
     // Check password (Simple text comparison)
-if (password !== user.password) {
-  return res.status(401).json({ success: false, message: "Invalid credentials" });
-}
+    if (password !== user.password) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
     // Generate JWT Token
     const token = jwt.sign(
@@ -149,8 +148,9 @@ if (password !== user.password) {
       success: true,
       message: "Login successful",
       token,
-      user: {name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`,
-    username: user.staffid,
+      user: {
+        name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`,
+        username: user.staffid,
         dob: user.dob,
         emailaddress: user.emailaddress,
         contact: user.contact,
@@ -167,45 +167,38 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Get the Admin DB connection (Assuming it's defined in your db config)
-    // If you don't have a separate connection variable, Mongoose uses the default one.
-    // Ensure your .env MONGO_URI points to the cluster where 'subjectallocations' exists.
-
-    // 2. Register Admin's model dynamically with correct types if not exists
-    if (!mongoose.models.subjectallocation) {
-      mongoose.model("subjectallocation", new mongoose.Schema({
-        teacher: mongoose.Schema.Types.ObjectId, // ✅ Must be ObjectId
-        subjects: [String],
-        standards: [String],
-        divisions: [String]
-      }), "subjectallocations"); // ✅ Explicit collection name
+    // 1. Define the model for subjectallocations if not already defined
+    if (!mongoose.models.SubjectAllocation) {
+      mongoose.model("SubjectAllocation", new mongoose.Schema({}, { strict: false }), "subjectallocations");
     }
 
-    // 3. Convert string ID from JWT to ObjectId for matching
-    const teacherId = new mongoose.Types.ObjectId(req.user.userId);
-
-    const allocation = await mongoose.model("subjectallocation").findOne({ 
-      teacher: teacherId 
+    // 2. Fetch the allocation for the logged-in teacher
+    const allocation = await mongoose.model("SubjectAllocation").findOne({ 
+      teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
 
     if (!allocation) {
-      return res.status(200).json({ success: false, message: "No subjects found" });
+      return res.status(200).json({ success: true, subjects: [] });
     }
 
-    // 4. Map the Admin arrays (Subjects, Standards, Divisions) into a list for Flutter
-    const formattedSubjects = allocation.subjects.map((sub, index) => ({
-      subject_name: sub,
-      standard: allocation.standards[index] || "N/A",
-      // Join divisions array into a readable string like "A, B, C"
-      division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
-    }));
+    // 3. Transform the Arrays into a list of objects for the Flutter DataTable
+    // We map through the 'subjects' array and pair them with corresponding standards/divisions
+    const formattedSubjects = allocation.subjects.map((subject, index) => {
+      return {
+        subject_name: subject,
+        standard: allocation.standards[index] || "N/A",
+        // Since divisions is a nested array in your DB (Array of 5), 
+        // we join them as a string (e.g., "A, B, C, D, E")
+        division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
+      };
+    });
 
     res.status(200).json({
       success: true,
       subjects: formattedSubjects
     });
   } catch (error) {
-    console.error("Subject Fetch Error:", error);
+    console.error("Fetch Subjects Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
