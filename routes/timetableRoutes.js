@@ -21,25 +21,30 @@ router.post('/upload', async (req, res) => {
 router.get('/:standard/:division/:day', async (req, res) => {
     const { standard, division, day } = req.params;
     try {
-        // Find the timetable for the specific class
-        const result = await Timetable.findOne({ standard, division });
+        // 1. Find the timetable document for the specific class
+        // Use a case-insensitive regex for division just in case
+        const result = await Timetable.findOne({ 
+            standard: standard, 
+            division: division 
+        });
         
-        // ✅ FIX: Return an empty array [] instead of status 404
-        // This prevents the XMLHttpRequest error in Flutter
         if (!result) {
+            console.log(`No document found for Standard ${standard} Div ${division}`);
             return res.json([]); 
         }
 
-        // Find the specific day (case-insensitive)
+        // 2. Find the specific day within the array
+        // We use .find and ensure we compare trimmed, lowercase strings
         const dayData = result.timetable.find(
-            d => d.day.toLowerCase() === day.toLowerCase()
+            d => d.day.trim().toLowerCase() === day.trim().toLowerCase()
         );
 
         if (!dayData) {
+            console.log(`Day ${day} not found in the timetable array`);
             return res.json([]); 
         }
 
-        // Return the periods array
+        // 3. Return the periods
         res.json(dayData.periods); 
     } catch (err) {
         console.error("Timetable Fetch Error:", err);
