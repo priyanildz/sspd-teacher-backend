@@ -96,6 +96,9 @@ exports.getProfile = async (req, res) => {
       success: true,
       user: {
         name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`, 
+        firstname: user.firstname,
+    middlename: user.middlename,
+    lastname: user.lastname,
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
