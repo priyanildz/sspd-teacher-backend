@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Timetable = require('../models/Timetable');
+const Timetable = require('../models/timetables');
 
 router.post('/upload', async (req, res) => {
   try {
