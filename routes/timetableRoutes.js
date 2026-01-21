@@ -54,22 +54,23 @@ router.get('/:standard/:division/:day', async (req, res) => {
     try {
         const result = await Timetable.findOne({ standard, division });
         
+        // Ensure we always return an array, even if the document is missing
         if (!result || !result.timetable) {
-            return res.json([]); 
+            return res.status(200).json([]); 
         }
 
-        // ✅ Explicitly check for the day using trim and lowercase
         const dayData = result.timetable.find(
             d => d.day.trim().toLowerCase() === day.trim().toLowerCase()
         );
 
+        // Ensure we return an array if the specific day is missing
         if (!dayData) {
-            return res.json([]); 
+            return res.status(200).json([]); 
         }
 
-        res.json(dayData.periods); 
+        res.status(200).json(dayData.periods); 
     } catch (err) {
-        console.error("Timetable Fetch Error:", err);
+        // Return empty array on error to prevent Flutter from crashing
         res.status(500).json([]); 
     }
 });
