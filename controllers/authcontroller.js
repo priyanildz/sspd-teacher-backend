@@ -64,34 +64,83 @@ exports.register = async (req, res) => {
 //   }
 // };
 
+// exports.getProfile = async (req, res) => {
+//   try {
+//     // 1. Ensure the 'classroom' model is registered before using it
+//     if (!mongoose.models.classroom) {
+//       mongoose.model("classroom", new mongoose.Schema({
+//         standard: String,
+//         division: String,
+//         staffid: mongoose.Schema.Types.ObjectId
+//       }), "classrooms"); // Points exactly to the 'classrooms' collection
+//     }
+
+//     // 2. Fetch user from 'staffs' collection
+//     const user = await User.findById(req.user.userId).select("-password");
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: "User not found" });
+//     }
+
+//     // 3. Look up assigned class using the teacher's unique _id
+//     const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
+
+//     // 4. Format Date
+//     let formattedDOB = "N/A";
+//     if (user.dob) {
+//       const dateObj = new Date(user.dob);
+//       formattedDOB = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+//     }
+
+//     // 5. Send data to Flutter
+//     res.status(200).json({
+//       success: true,
+//       user: {
+//         name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`,
+//         username: user.staffid,
+//         dob: formattedDOB,
+//         emailaddress: user.emailaddress,
+//         contact: user.phoneno || user.contact,
+//         photo: user.photo,
+//         role: user.role || "teacher",
+//         // ✅ Returns the Admin's classroom data (e.g., "1 - A")
+//         classAssigned: classroom ? {
+//           standard: classroom.standard,
+//           division: classroom.division
+//         } : { standard: "N/A", division: "N/A" },
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Profile Fetch Error:", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
 exports.getProfile = async (req, res) => {
   try {
-    // 1. Ensure the 'classroom' model is registered before using it
     if (!mongoose.models.classroom) {
       mongoose.model("classroom", new mongoose.Schema({
         standard: String,
         division: String,
         staffid: mongoose.Schema.Types.ObjectId
-      }), "classrooms"); // Points exactly to the 'classrooms' collection
+      }), "classrooms");
     }
 
-    // 2. Fetch user from 'staffs' collection
     const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // 3. Look up assigned class using the teacher's unique _id
+    // 1. Try to find the classroom record where this teacher is assigned
     const classroom = await mongoose.model("classroom").findOne({ staffid: user._id });
 
-    // 4. Format Date
+    // 2. Format Date
     let formattedDOB = "N/A";
     if (user.dob) {
       const dateObj = new Date(user.dob);
       formattedDOB = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
     }
 
-    // 5. Send data to Flutter
+    // 3. Send data - FALLBACK logic added here
     res.status(200).json({
       success: true,
       user: {
@@ -102,11 +151,11 @@ exports.getProfile = async (req, res) => {
         contact: user.phoneno || user.contact,
         photo: user.photo,
         role: user.role || "teacher",
-        // ✅ Returns the Admin's classroom data (e.g., "1 - A")
+        // ✅ FIX: If 'classroom' lookup is null, use the data stored directly on the user object
         classAssigned: classroom ? {
           standard: classroom.standard,
           division: classroom.division
-        } : { standard: "N/A", division: "N/A" },
+        } : (user.classAssigned || { standard: "N/A", division: "N/A" }),
       },
     });
   } catch (error) {
