@@ -52,35 +52,21 @@ router.post('/upload', async (req, res) => {
 router.get('/:standard/:division/:day', async (req, res) => {
     const { standard, division, day } = req.params;
     try {
-        console.log(`Searching for Standard: "${standard}", Division: "${division}"`);
-
-        // 1. Find the document - Use regex to ignore hidden spaces/case
-        const result = await Timetable.findOne({ 
-            standard: standard.trim(), 
-            division: division.trim() 
-        });
+        const result = await Timetable.findOne({ standard, division });
         
-        if (!result) {
-            console.log("Database Error: No document found for this class");
+        if (!result || !result.timetable) {
             return res.json([]); 
         }
 
-        console.log("Document found. Checking days in array...");
-
-        // 2. Find the day - Log all days in the DB to compare
-        const dayData = result.timetable.find(d => {
-            const dbDay = d.day.trim().toLowerCase();
-            const reqDay = day.trim().toLowerCase();
-            console.log(`Comparing DB Day: "${dbDay}" with Request Day: "${reqDay}"`);
-            return dbDay === reqDay;
-        });
+        // ✅ Explicitly check for the day using trim and lowercase
+        const dayData = result.timetable.find(
+            d => d.day.trim().toLowerCase() === day.trim().toLowerCase()
+        );
 
         if (!dayData) {
-            console.log(`Match failed for day: ${day}`);
             return res.json([]); 
         }
 
-        console.log(`Success! Sending ${dayData.periods.length} periods.`);
         res.json(dayData.periods); 
     } catch (err) {
         console.error("Timetable Fetch Error:", err);
