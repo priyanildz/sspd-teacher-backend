@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
+const MySubject = require("../models/MySubject");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
@@ -166,23 +167,40 @@ if (password !== user.password) {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // req.user.userId is the teacher's ID from the JWT token
-    const subjects = await MySubject.findOne({ user_id: req.user.userId });
-
-    if (!subjects) {
-      return res.status(200).json({ 
-        success: true, 
-        subjects: [], 
-        message: "No subjects assigned yet." 
-      });
+    // 1. Ensure Admin's subjectallocation model is registered
+    if (!mongoose.models.subjectallocation) {
+      mongoose.model("subjectallocation", new mongoose.Schema({
+        teacher: mongoose.Schema.Types.ObjectId,
+        subjects: [String],
+        standards: [String],
+        divisions: [String],
+        teacherName: String
+      }), "subjectallocations"); // Points to the Admin's collection
     }
+
+    // 2. Find the allocation for the current logged-in teacher
+    const allocation = await mongoose.model("subjectallocation").findOne({ 
+      teacher: req.user.userId 
+    });
+
+    if (!allocation) {
+      return res.status(200).json({ success: true, subjects: [] });
+    }
+
+    // 3. Transform Admin's arrays into the format your Flutter table expects
+    // Since Admin uses separate arrays, we combine them into a list of objects
+    const formattedSubjects = allocation.subjects.map((sub, index) => ({
+      subject_name: sub,
+      standard: allocation.standards[0] || "N/A", // Admin stores standards in an array
+      division: allocation.divisions.join(", ")   // Admin stores divisions in an array
+    }));
 
     res.status(200).json({
       success: true,
-      subjects: subjects.subjects // ✅ Return just the array of subjects
+      subjects: formattedSubjects
     });
   } catch (error) {
-    console.error("Fetch Subjects Error:", error);
+    console.error("Subject Fetch Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
