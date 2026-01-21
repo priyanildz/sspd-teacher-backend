@@ -96,9 +96,6 @@ exports.getProfile = async (req, res) => {
       success: true,
       user: {
         name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`, 
-        firstname: user.firstname,
-    middlename: user.middlename,
-    lastname: user.lastname,
         username: user.staffid, 
         dob: formattedDOB,
         emailaddress: user.emailaddress,
@@ -151,9 +148,8 @@ if (password !== user.password) {
       success: true,
       message: "Login successful",
       token,
-      user: {
-        name: user.name,
-        username: user.username,
+      user: {name: user.name || `${user.firstname} ${user.middlename} ${user.lastname}`,
+    username: user.staffid,
         dob: user.dob,
         emailaddress: user.emailaddress,
         contact: user.contact,
