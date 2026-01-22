@@ -15,7 +15,23 @@ const daySchema = new mongoose.Schema({
 const timetableSchema = new mongoose.Schema({
   standard: String,
   division: String,
-  timetable: [daySchema],
+  from: String,
+  to: String,
+  timetable: [
+    {
+      day: String,
+      periods: [
+        {
+          periodNumber: Number,
+          subject: String,
+          teacher: mongoose.Schema.Types.ObjectId,
+          teacherName: String,
+          time: String
+        }
+      ]
+    }
+  ]
 });
 
-module.exports = mongoose.model('Timetable', timetableSchema);
+
+module.exports = mongoose.model('Timetable', timetableSchema, "timetables");

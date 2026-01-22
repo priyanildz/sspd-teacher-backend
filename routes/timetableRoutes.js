@@ -48,38 +48,42 @@ router.post('/upload', async (req, res) => {
 //         res.status(500).json([]); 
 //     }
 // });
-router.get('/:standard/:division/:day', async (req, res) => {
-    const { standard, division, day } = req.params;
+router.get('/:standard/:division/:date', async (req, res) => {
+    const { standard, division, date } = req.params;
+
     try {
-        // 1. Search using strings to match your Atlas screenshot ("1" and "A")
-        // We use the 'timetable' model defined in your second schema
-        const result = await mongoose.model("timetable").findOne({ 
-            standard: standard.toString(), 
-            division: division.toString() 
-        });
-        
+        const result = await Timetable.findOne({ standard, division });
+
         if (!result || !result.timetable) {
-            console.log(`No timetable document found for ${standard}-${division}`);
-            return res.status(200).json([]); 
+            return res.status(200).json([]);
         }
 
-        // 2. Locate the specific day within the array
+        const requestedDate = new Date(date);
+        if (isNaN(requestedDate.getTime())) {
+            return res.status(200).json([]);
+        }
+
+        const dayName = requestedDate.toLocaleDateString("en-US", {
+            weekday: "long"
+        });
+
         const dayData = result.timetable.find(
-            d => d.day && d.day.trim().toLowerCase() === day.trim().toLowerCase()
+            // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
+            d => d.day.toLowerCase() === dayName.toLowerCase()
         );
 
-        // 3. Extract the 'periods' array (as seen in your screenshot)
         if (!dayData || !dayData.periods) {
-            console.log(`No periods found for the day: ${day}`);
-            return res.status(200).json([]); 
+            return res.status(200).json([]);
         }
 
-        res.status(200).json(dayData.periods); 
+        res.status(200).json(dayData.periods);
+
     } catch (err) {
-        console.error("Timetable Fetch Error:", err);
-        res.status(500).json([]); 
+        console.error("Fetch Error:", err);
+        res.status(500).json([]);
     }
 });
+
 
 
 module.exports = router;
