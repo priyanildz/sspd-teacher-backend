@@ -51,31 +51,31 @@ router.post('/upload', async (req, res) => {
 router.get('/:standard/:division/:day', async (req, res) => {
     const { standard, division, day } = req.params;
     try {
-        // 1. Find the timetable document for the specific class
-        const result = await Timetable.findOne({ standard, division });
+        // Force 'standard' to be a Number to match the DB type in your screenshot
+        const queryStandard = isNaN(standard) ? standard : Number(standard);
+
+        const result = await Timetable.findOne({ 
+            standard: queryStandard, 
+            division: division 
+        });
         
         if (!result || !result.timetable) {
-            console.log(`No timetable found for ${standard}-${division}`);
             return res.status(200).json([]); 
         }
 
-        // 2. Locate the specific day within the timetable array
-        // We use case-insensitive matching to be safe
+        // Find the day inside the nested array
         const dayData = result.timetable.find(
-            item => item.day && item.day.toLowerCase() === day.toLowerCase()
+            d => d.day && d.day.trim().toLowerCase() === day.trim().toLowerCase()
         );
 
-        // 3. Extract the periods
-        // Based on typical structures, dayData usually contains a 'periods' or 'subjects' array
         if (!dayData || !dayData.periods) {
-            console.log(`No periods found for day: ${day}`);
             return res.status(200).json([]); 
         }
 
         res.status(200).json(dayData.periods); 
     } catch (err) {
-        console.error("Timetable Fetch Error:", err);
-        res.status(500).json({ error: "Server Error" }); 
+        console.error("Fetch Error:", err);
+        res.status(500).json([]); 
     }
 });
 
