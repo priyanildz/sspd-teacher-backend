@@ -52,27 +52,14 @@ router.get('/:standard/:division/:date', async (req, res) => {
     const { standard, division, date } = req.params;
 
     try {
-        const result = await Timetable.findOne({
-            standard: standard,
-            division: division
-        });
+        const result = await Timetable.findOne({ standard, division });
 
         if (!result || !result.timetable) {
-            console.log("No document found for standard:", standard);
             return res.status(200).json([]);
         }
 
         const requestedDate = new Date(date);
         if (isNaN(requestedDate.getTime())) {
-            console.log("Invalid date:", date);
-            return res.status(200).json([]);
-        }
-
-        const fromDate = new Date(result.from);
-        const toDate = new Date(result.to);
-
-        if (requestedDate < fromDate || requestedDate > toDate) {
-            console.log("Date out of academic range:", date);
             return res.status(200).json([]);
         }
 
@@ -85,7 +72,6 @@ router.get('/:standard/:division/:date', async (req, res) => {
         );
 
         if (!dayData || !dayData.periods) {
-            console.log("No day data found for:", dayName);
             return res.status(200).json([]);
         }
 
