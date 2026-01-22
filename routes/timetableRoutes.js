@@ -51,15 +51,14 @@ router.post('/upload', async (req, res) => {
 router.get('/:standard/:division/:day', async (req, res) => {
     const { standard, division, day } = req.params;
     try {
-        // Force 'standard' to be a Number to match the DB type in your screenshot
-        const queryStandard = isNaN(standard) ? standard : Number(standard);
-
+        // Query using strings to match the "1" and "A" seen in your Atlas screenshot
         const result = await Timetable.findOne({ 
-            standard: queryStandard, 
-            division: division 
+            standard: standard.toString(), 
+            division: division.toString() 
         });
         
         if (!result || !result.timetable) {
+            console.log("No document found for standard:", standard);
             return res.status(200).json([]); 
         }
 
@@ -69,6 +68,7 @@ router.get('/:standard/:division/:day', async (req, res) => {
         );
 
         if (!dayData || !dayData.periods) {
+            console.log("No day data found for:", day);
             return res.status(200).json([]); 
         }
 
