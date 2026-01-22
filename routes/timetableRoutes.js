@@ -48,36 +48,55 @@ router.post('/upload', async (req, res) => {
 //         res.status(500).json([]); 
 //     }
 // });
-router.get('/:standard/:division/:day', async (req, res) => {
-    const { standard, division, day } = req.params;
+router.get('/:standard/:division/:date', async (req, res) => {
+    const { standard, division, date } = req.params;
+
     try {
-        // Query using strings to match the "1" and "A" seen in your Atlas screenshot
-        const result = await Timetable.findOne({ 
-            standard: standard.toString(), 
-            division: division.toString() 
+        const result = await Timetable.findOne({
+            standard: standard,
+            division: division
         });
-        
+
         if (!result || !result.timetable) {
             console.log("No document found for standard:", standard);
-            return res.status(200).json([]); 
+            return res.status(200).json([]);
         }
 
-        // Find the day inside the nested array
+        const requestedDate = new Date(date);
+        if (isNaN(requestedDate.getTime())) {
+            console.log("Invalid date:", date);
+            return res.status(200).json([]);
+        }
+
+        const fromDate = new Date(result.from);
+        const toDate = new Date(result.to);
+
+        if (requestedDate < fromDate || requestedDate > toDate) {
+            console.log("Date out of academic range:", date);
+            return res.status(200).json([]);
+        }
+
+        const dayName = requestedDate.toLocaleDateString("en-US", {
+            weekday: "long"
+        });
+
         const dayData = result.timetable.find(
-            d => d.day && d.day.trim().toLowerCase() === day.trim().toLowerCase()
+            d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
         );
 
         if (!dayData || !dayData.periods) {
-            console.log("No day data found for:", day);
-            return res.status(200).json([]); 
+            console.log("No day data found for:", dayName);
+            return res.status(200).json([]);
         }
 
-        res.status(200).json(dayData.periods); 
+        res.status(200).json(dayData.periods);
+
     } catch (err) {
         console.error("Fetch Error:", err);
-        res.status(500).json([]); 
+        res.status(500).json([]);
     }
 });
+
 
 
 module.exports = router;
