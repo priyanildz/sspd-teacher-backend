@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const express = require("express");
 const http = require("http"); 
 const cors = require("cors");
@@ -70,17 +71,24 @@ app.post("/api/assessments/create", async (req, res) => {
   try {
     const { teacherId, subjectCovered, topicCovered, keyPoints, classActivity, homework, date, standard, division } = req.body;
 
-    // Direct access to the 'assessments' collection in the Admin database
+    // Check if we are connected to the DB
+    if (!mongoose.connection || !mongoose.connection.db) {
+        return res.status(500).json({ success: false, message: "Database connection not established" });
+    }
+
     const assessmentCollection = mongoose.connection.db.collection('assessments');
 
     const newDoc = {
-      teacherId: new mongoose.Types.ObjectId(teacherId),
+      // ✅ Using mongoose.Types.ObjectId only if teacherId is a valid string
+      teacherId: mongoose.Types.ObjectId.isValid(teacherId) 
+                 ? new mongoose.Types.ObjectId(teacherId) 
+                 : teacherId,
       subjectCovered,
       topicCovered,
       keyPoints,
       classActivity,
       homework,
-      date: new Date(date),
+      date: date ? new Date(date) : new Date(),
       standard,
       division,
       createdAt: new Date(),
@@ -92,7 +100,7 @@ app.post("/api/assessments/create", async (req, res) => {
     res.status(201).json({ success: true, message: "Assessment created successfully" });
   } catch (error) {
     console.error("Direct Assessment Creation Error:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
