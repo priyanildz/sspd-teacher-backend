@@ -14,6 +14,7 @@ const timetableRoutes = require('./routes/timetableRoutes');
 const announcementRoutes = require('./routes/announcementRoutes');
 const messageRoutes= require('./routes/messageRoutes')
 const teacherRoutes = require("./routes/teacherRoutes");
+const assessmentRoutes = require('./routes/assessmentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000; // Use process.env.PORT for Vercel
@@ -46,6 +47,7 @@ app.use("/api/mysubjects", mySubjectRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/messages', messageRoutes);
+app.use("/api/assessments", assessmentRoutes);
 app.use("/api/teachers", teacherRoutes);
 
 io.on("connection", (socket) => {
