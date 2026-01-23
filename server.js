@@ -65,6 +65,37 @@ io.on("connection", (socket) => {
   });
 });
 
+// Add this route directly in your main server file after other app.use statements
+app.post("/api/assessments/create", async (req, res) => {
+  try {
+    const { teacherId, subjectCovered, topicCovered, keyPoints, classActivity, homework, date, standard, division } = req.body;
+
+    // Direct access to the 'assessments' collection in the Admin database
+    const assessmentCollection = mongoose.connection.db.collection('assessments');
+
+    const newDoc = {
+      teacherId: new mongoose.Types.ObjectId(teacherId),
+      subjectCovered,
+      topicCovered,
+      keyPoints,
+      classActivity,
+      homework,
+      date: new Date(date),
+      standard,
+      division,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await assessmentCollection.insertOne(newDoc);
+
+    res.status(201).json({ success: true, message: "Assessment created successfully" });
+  } catch (error) {
+    console.error("Direct Assessment Creation Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 // ✅ ONLY listen if we are NOT on Vercel
 if (process.env.NODE_ENV !== 'production') {
   server.listen(PORT, () => {
