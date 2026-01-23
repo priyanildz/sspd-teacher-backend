@@ -61,29 +61,29 @@ exports.getAssessment = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-// exports.checkAssessmentsAvailability = async (req, res) => {
-//   try {
-//     const { teacherId, standard, division, date, subjects } = req.body;
-//     const assessmentCollection = mongoose.connection.db.collection('assessments');
+exports.checkAssessmentsAvailability = async (req, res) => {
+  try {
+    const { teacherId, standard, division, date, subjects } = req.body;
+    const assessmentCollection = mongoose.connection.db.collection('assessments');
 
-//     const startOfDay = new Date(date);
-//     startOfDay.setHours(0, 0, 0, 0);
-//     const endOfDay = new Date(date);
-//     endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
-//     // Find all assessments for this teacher/class/day
-//     const assessments = await assessmentCollection.find({
-//       teacherId: new mongoose.Types.ObjectId(teacherId),
-//       standard: standard,
-//       division: division,
-//       date: { $gte: startOfDay, $lte: endOfDay }
-//     }).toArray();
+    // Find all assessments for this teacher/class/day
+    const assessments = await assessmentCollection.find({
+      teacherId: new mongoose.Types.ObjectId(teacherId),
+      standard: standard,
+      division: division,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    }).toArray();
 
-//     // Create a list of subjects that have assessments
-//     const availableSubjects = assessments.map(a => a.subjectCovered);
+    // Create a list of subjects that have assessments
+    const availableSubjects = assessments.map(a => a.subjectCovered);
 
-//     res.status(200).json({ success: true, availableSubjects });
-//   } catch (error) {
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// };
+    res.status(200).json({ success: true, availableSubjects });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
