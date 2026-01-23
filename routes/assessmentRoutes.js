@@ -1,21 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Assessment = require('../models/Assessment'); // Ensure this model exists
+const Assessment = require('../models/Assessment'); 
 
 router.post('/create', async (req, res) => {
     try {
         const { teacherId, classroomId, subjectCovered, topicCovered, keyPoints, classActivity, homework, date } = req.body;
 
+        // ✅ Check if IDs are valid before trying to convert them
+        if (!mongoose.Types.ObjectId.isValid(teacherId)) {
+            return res.status(400).json({ success: false, message: "Invalid Teacher ID" });
+        }
+
         const newAssessment = new Assessment({
             teacherId: new mongoose.Types.ObjectId(teacherId),
-            classroomId: new mongoose.Types.ObjectId(classroomId),
+            // ✅ Only convert classroomId if it is provided and valid
+            classroomId: classroomId && mongoose.Types.ObjectId.isValid(classroomId) 
+                         ? new mongoose.Types.ObjectId(classroomId) 
+                         : null,
             subjectCovered,
             topicCovered,
             keyPoints,
             classActivity,
             homework,
-            date: new Date(date)
+            date: date ? new Date(date) : new Date()
         });
 
         await newAssessment.save();
