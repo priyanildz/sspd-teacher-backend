@@ -92,6 +92,48 @@ router.post("/add-my-subjects", async (req, res) => {
 });
 
 // ✅ GET Route: Updated to fetch and format data from 'subjectallocations'
+// router.get("/", async (req, res) => {
+//     try {
+//         const { user_id } = req.query;
+
+//         if (!user_id) {
+//             return res.status(400).json({ success: false, message: "User ID is required" });
+//         }
+
+//         // 1. Ensure we are looking at the 'subjectallocations' collection
+//         // Use your existing MySubject model or point to the collection shown in your image
+//         const allocation = await mongoose.connection.collection("subjectallocations").findOne({ 
+//             teacher: new mongoose.Types.ObjectId(user_id) 
+//         });
+
+//         if (!allocation) {
+//             return res.status(200).json({ success: true, subjects: [] });
+//         }
+
+//         // 2. Format the data for Flutter
+//         // Your Flutter code expects: { "subject_name": "...", "standard": "...", "division": "..." }
+//         // We "zip" the arrays from your DB screenshot into a single list
+//         const formattedSubjects = (allocation.subjects || []).map((subj, index) => {
+//             return {
+//                 subject_name: subj,
+//                 standard: (allocation.standards && allocation.standards[index]) ? allocation.standards[index] : "N/A",
+//                 // Joins the divisions array (A, B, C, D, E) into one string for the table
+//                 division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : "-"
+//             };
+//         });
+
+//         res.status(200).json({ 
+//             success: true, 
+//             subjects: formattedSubjects 
+//         });
+
+//     } catch (error) {
+//         console.error("Error fetching subjects:", error);
+//         res.status(500).json({ success: false, message: "Internal Server Error" });
+//     }
+// });
+
+// ✅ Corrected GET Route in mySubjectRoutes.js
 router.get("/", async (req, res) => {
     try {
         const { user_id } = req.query;
@@ -100,8 +142,6 @@ router.get("/", async (req, res) => {
             return res.status(400).json({ success: false, message: "User ID is required" });
         }
 
-        // 1. Ensure we are looking at the 'subjectallocations' collection
-        // Use your existing MySubject model or point to the collection shown in your image
         const allocation = await mongoose.connection.collection("subjectallocations").findOne({ 
             teacher: new mongoose.Types.ObjectId(user_id) 
         });
@@ -110,16 +150,21 @@ router.get("/", async (req, res) => {
             return res.status(200).json({ success: true, subjects: [] });
         }
 
-        // 2. Format the data for Flutter
-        // Your Flutter code expects: { "subject_name": "...", "standard": "...", "division": "..." }
-        // We "zip" the arrays from your DB screenshot into a single list
-        const formattedSubjects = (allocation.subjects || []).map((subj, index) => {
-            return {
-                subject_name: subj,
-                standard: (allocation.standards && allocation.standards[index]) ? allocation.standards[index] : "N/A",
-                // Joins the divisions array (A, B, C, D, E) into one string for the table
-                division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : "-"
-            };
+        const formattedSubjects = [];
+
+        // ✅ FLATTENING LOGIC: Loop through subjects and create separate entries for each division
+        (allocation.subjects || []).forEach((subj, index) => {
+            const std = (allocation.standards && allocation.standards[index]) ? allocation.standards[index] : "N/A";
+            const divisions = allocation.divisions || [];
+
+            // Instead of joining with ", ", we push each division as a separate object
+            divisions.forEach(div => {
+                formattedSubjects.push({
+                    subject_name: subj,
+                    standard: std,
+                    division: div // Now returns "A", then "B", then "C", etc.
+                });
+            });
         });
 
         res.status(200).json({ 
