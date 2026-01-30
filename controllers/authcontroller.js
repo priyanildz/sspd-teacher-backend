@@ -219,14 +219,51 @@ exports.login = async (req, res) => {
   }
 };
 
+// exports.getMySubjects = async (req, res) => {
+//   try {
+//     // 1. Define the model for subjectallocations if not already defined
+//     if (!mongoose.models.SubjectAllocation) {
+//       mongoose.model("SubjectAllocation", new mongoose.Schema({}, { strict: false }), "subjectallocations");
+//     }
+
+//     // 2. Fetch the allocation for the logged-in teacher
+//     const allocation = await mongoose.model("SubjectAllocation").findOne({ 
+//       teacher: new mongoose.Types.ObjectId(req.user.userId) 
+//     });
+
+//     if (!allocation) {
+//       return res.status(200).json({ success: true, subjects: [] });
+//     }
+
+//     // 3. Transform the Arrays into a list of objects for the Flutter DataTable
+//     // We map through the 'subjects' array and pair them with corresponding standards/divisions
+//     const formattedSubjects = allocation.subjects.map((subject, index) => {
+//       return {
+//         subject_name: subject,
+//         standard: allocation.standards[index] || "N/A",
+//         // Since divisions is a nested array in your DB (Array of 5), 
+//         // we join them as a string (e.g., "A, B, C, D, E")
+//         division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
+//       };
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       subjects: formattedSubjects
+//     });
+//   } catch (error) {
+//     console.error("Fetch Subjects Error:", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
+
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Define the model for subjectallocations if not already defined
     if (!mongoose.models.SubjectAllocation) {
       mongoose.model("SubjectAllocation", new mongoose.Schema({}, { strict: false }), "subjectallocations");
     }
 
-    // 2. Fetch the allocation for the logged-in teacher
     const allocation = await mongoose.model("SubjectAllocation").findOne({ 
       teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
@@ -235,16 +272,28 @@ exports.getMySubjects = async (req, res) => {
       return res.status(200).json({ success: true, subjects: [] });
     }
 
-    // 3. Transform the Arrays into a list of objects for the Flutter DataTable
-    // We map through the 'subjects' array and pair them with corresponding standards/divisions
-    const formattedSubjects = allocation.subjects.map((subject, index) => {
-      return {
-        subject_name: subject,
-        standard: allocation.standards[index] || "N/A",
-        // Since divisions is a nested array in your DB (Array of 5), 
-        // we join them as a string (e.g., "A, B, C, D, E")
-        division: Array.isArray(allocation.divisions) ? allocation.divisions.join(", ") : allocation.divisions
-      };
+    const formattedSubjects = [];
+
+    // ✅ FIXED LOGIC: Iterate through subjects and flatten the division arrays
+    allocation.subjects.forEach((subject, index) => {
+      const std = allocation.standards[index] || "N/A";
+      const divs = allocation.divisions[index];
+
+      if (Array.isArray(divs)) {
+        divs.forEach(d => {
+          formattedSubjects.push({
+            subject_name: subject,
+            standard: std,
+            division: d // Now sending each division separately
+          });
+        });
+      } else {
+        formattedSubjects.push({
+          subject_name: subject,
+          standard: std,
+          division: divs || "N/A"
+        });
+      }
     });
 
     res.status(200).json({
