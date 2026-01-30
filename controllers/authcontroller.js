@@ -268,38 +268,33 @@ exports.getMySubjects = async (req, res) => {
       teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
 
-    if (!allocation) {
-      return res.status(200).json({ success: true, subjects: [] });
-    }
+    if (!allocation) return res.status(200).json({ success: true, subjects: [] });
 
     const formattedSubjects = [];
 
-    // ✅ FIXED LOGIC: Iterate through subjects and flatten the division arrays
     allocation.subjects.forEach((subject, index) => {
       const std = allocation.standards[index] || "N/A";
       const divs = allocation.divisions[index];
 
+      // ✅ FIX: Check if the specific division entry is an array (e.g., ["A"])
       if (Array.isArray(divs)) {
         divs.forEach(d => {
           formattedSubjects.push({
             subject_name: subject,
             standard: std,
-            division: d // Now sending each division separately
+            division: String(d) // Force to string to prevent frontend issues
           });
         });
       } else {
         formattedSubjects.push({
           subject_name: subject,
           standard: std,
-          division: divs || "N/A"
+          division: divs ? String(divs) : "N/A"
         });
       }
     });
 
-    res.status(200).json({
-      success: true,
-      subjects: formattedSubjects
-    });
+    res.status(200).json({ success: true, subjects: formattedSubjects });
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
