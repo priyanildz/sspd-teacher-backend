@@ -260,42 +260,34 @@ exports.login = async (req, res) => {
 
 exports.getMySubjects = async (req, res) => {
   try {
-    // 1. Ensure the model is registered
     if (!mongoose.models.SubjectAllocation) {
       mongoose.model("SubjectAllocation", new mongoose.Schema({}, { strict: false }), "subjectallocations");
     }
 
-    // 2. Fetch the allocation for the logged-in teacher
     const allocation = await mongoose.model("SubjectAllocation").findOne({ 
       teacher: new mongoose.Types.ObjectId(req.user.userId) 
     });
 
-    if (!allocation) {
-      return res.status(200).json({ success: true, subjects: [] });
-    }
+    if (!allocation) return res.status(200).json({ success: true, subjects: [] });
 
     const formattedSubjects = [];
 
-    // 3. Loop through the subjects array
+    // ✅ FLATTENING LOGIC: Ensure every division in the nested array becomes a string
     allocation.subjects.forEach((subject, index) => {
       const std = allocation.standards[index] || "N/A";
       const divData = allocation.divisions[index];
 
-      // ✅ FIX: Handle nested arrays (e.g., [["A"], ["B"]])
-      // If divData is an array, we loop through it to create individual entries
       if (Array.isArray(divData)) {
         divData.forEach(d => {
-          // If there's another level of nesting (e.g. ["A"]), flatten it
+          // If the DB has double nesting like [["A"]], take the inner value
           const finalDiv = Array.isArray(d) ? d[0] : d;
-          
           formattedSubjects.push({
             subject_name: subject,
             standard: std,
-            division: String(finalDiv).trim() // Force to string to prevent Flutter errors
+            division: String(finalDiv).trim() 
           });
         });
       } else {
-        // Fallback for single string values
         formattedSubjects.push({
           subject_name: subject,
           standard: std,
@@ -304,11 +296,7 @@ exports.getMySubjects = async (req, res) => {
       }
     });
 
-    // 4. Return the fully flattened list
-    res.status(200).json({
-      success: true,
-      subjects: formattedSubjects
-    });
+    res.status(200).json({ success: true, subjects: formattedSubjects });
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
