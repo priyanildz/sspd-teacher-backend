@@ -178,4 +178,53 @@ router.get("/", async (req, res) => {
     }
 });
 
+router.get("/active-classes", async (req, res) => {
+    try {
+        const { user_id, date } = req.query;
+
+        if (!user_id || !date) {
+            return res.status(400).json({ success: false, message: "User ID and Date are required" });
+        }
+
+        const requestedDate = new Date(date);
+        const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
+
+        // 1. Fetch ALL timetables directly from the 'timetables' collection
+        // This ensures we only see classes that actually have a schedule document
+        const allTimetables = await mongoose.connection.collection("timetables").find({}).toArray();
+
+        let activeStds = new Set();
+        let activeDivs = new Set();
+
+        // 2. Filter timetables where this teacher has a period on this specific day
+        allTimetables.forEach(tt => {
+            const dayData = tt.timetable.find(
+                d => d.day && d.day.toLowerCase() === dayName.toLowerCase()
+            );
+
+            if (dayData && dayData.periods) {
+                // Check if any period matches the teacher's ID
+                const hasLecture = dayData.periods.some(period => 
+                    period.teacher && period.teacher.toString() === user_id
+                );
+
+                if (hasLecture) {
+                    activeStds.add(tt.standard.toString());
+                    activeDivs.add(tt.division.toString());
+                }
+            }
+        });
+
+        res.status(200).json({ 
+            success: true, 
+            stds: Array.from(activeStds).sort(),
+            divs: Array.from(activeDivs).sort() // ✅ Will return only A, B, C, D
+        });
+
+    } catch (error) {
+        console.error("Error fetching active classes:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+});
+
 module.exports = router;
