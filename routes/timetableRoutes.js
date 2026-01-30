@@ -114,7 +114,7 @@ router.get('/teacher/:teacherId/:date', async (req, res) => {
       dayData.periods.forEach(period => {
         if (
           period.teacher &&
-          period.teacher.toString() === teacherId
+          mongoose.Types.ObjectId(period.teacher).equals(teacherId)
         ) {
           result.push({
             standard: tt.standard,
