@@ -189,15 +189,16 @@ router.get("/active-classes", async (req, res) => {
         const requestedDate = new Date(date);
         const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
 
-        // 1. Fetch ALL timetables directly from the 'timetables' collection
-        // This ensures we only see classes that actually have a schedule document
-        const allTimetables = await mongoose.connection.collection("timetables").find({}).toArray();
+        // 1. Fetch ALL timetables using the Mongoose Model (standard way)
+        const allTimetables = await Timetable.find({}); 
 
         let activeStds = new Set();
         let activeDivs = new Set();
 
-        // 2. Filter timetables where this teacher has a period on this specific day
+        // 2. Scan each timetable document
         allTimetables.forEach(tt => {
+            if (!tt.timetable) return;
+
             const dayData = tt.timetable.find(
                 d => d.day && d.day.toLowerCase() === dayName.toLowerCase()
             );
@@ -218,12 +219,12 @@ router.get("/active-classes", async (req, res) => {
         res.status(200).json({ 
             success: true, 
             stds: Array.from(activeStds).sort(),
-            divs: Array.from(activeDivs).sort() // ✅ Will return only A, B, C, D
+            divs: Array.from(activeDivs).sort()
         });
 
     } catch (error) {
         console.error("Error fetching active classes:", error);
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+        res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
     }
 });
 
