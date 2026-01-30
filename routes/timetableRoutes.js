@@ -84,6 +84,58 @@ router.get('/:standard/:division/:date', async (req, res) => {
     }
 });
 
+// ✅ NEW: Get all lectures of a teacher for a given date
+router.get('/teacher/:teacherId/:date', async (req, res) => {
+  const { teacherId, date } = req.params;
+
+  try {
+    const requestedDate = new Date(date);
+    if (isNaN(requestedDate.getTime())) {
+      return res.status(200).json([]);
+    }
+
+    const dayName = requestedDate.toLocaleDateString("en-US", {
+      weekday: "long"
+    });
+
+    // 1️⃣ Fetch ALL timetables
+    const timetables = await Timetable.find({});
+
+    let result = [];
+
+    // 2️⃣ Scan each standard/division
+    timetables.forEach(tt => {
+      const dayData = tt.timetable.find(
+        d => d.day && d.day.toLowerCase() === dayName.toLowerCase()
+      );
+
+      if (!dayData || !dayData.periods) return;
+
+      dayData.periods.forEach(period => {
+        if (
+          period.teacher &&
+          period.teacher.toString() === teacherId
+        ) {
+          result.push({
+            standard: tt.standard,
+            division: tt.division,
+            periodNumber: period.periodNumber,
+            subject: period.subject,
+            teacher: period.teacher,
+            teacherName: period.teacherName,
+            time: period.time
+          });
+        }
+      });
+    });
+
+    return res.status(200).json(result);
+
+  } catch (err) {
+    console.error("Teacher Timetable Fetch Error:", err);
+    return res.status(500).json([]);
+  }
+});
 
 
 module.exports = router;
