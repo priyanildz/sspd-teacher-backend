@@ -1,4 +1,6 @@
-const StaffLeave = require("../models/StaffLeave");
+// const StaffLeave = require("../models/StaffLeave");
+// Ensure the path to your model file is exactly correct
+const StaffLeave = require("../models/staff_leave");
 
 // exports.applyLeave = async (req, res) => {
 //   try {
@@ -42,12 +44,22 @@ exports.applyLeave = async (req, res) => {
   }
 };
 
+// exports.getMyLeaves = async (req, res) => {
+//   try {
+//     // Fetch only the leaves for the logged-in teacher
+//     const leaves = await StaffLeave.find({ staffid: req.user.userId }).sort({ submitted_at: -1 });
+//     res.status(200).json({ success: true, leaves });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
+
 exports.getMyLeaves = async (req, res) => {
-  try {
-    // Fetch only the leaves for the logged-in teacher
-    const leaves = await StaffLeave.find({ staffid: req.user.userId }).sort({ submitted_at: -1 });
-    res.status(200).json({ success: true, leaves });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
+  try {
+    // ✅ CHANGE: Use req.user.username to match how you now save leaves
+    const leaves = await StaffLeave.find({ staffid: req.user.username }).sort({ submitted_at: -1 });
+    res.status(200).json({ success: true, leaves });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
