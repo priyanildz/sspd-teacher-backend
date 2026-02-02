@@ -1,6 +1,4 @@
-// const StaffLeave = require("../models/StaffLeave");
-// Ensure the path to your model file is exactly correct
-const StaffLeave = require("../models/staff_leave");
+const StaffLeave = require("../models/StaffLeave");
 
 // exports.applyLeave = async (req, res) => {
 //   try {
