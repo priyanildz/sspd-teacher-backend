@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
+const authcontroller = require("../controllers/authcontroller");
 
 // 🔍 GET all teachers except the current logged-in teacher
 router.get("/", authMiddleware, async (req, res) => {
@@ -21,6 +22,6 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 
 // Example route to fetch personal attendance
-router.get("/my-attendance", authMiddleware, teacherController.getStaffAttendance);
+router.get("/my-attendance", authMiddleware, authcontroller.getStaffAttendance);
 
 module.exports = router;

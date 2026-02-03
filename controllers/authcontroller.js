@@ -304,3 +304,21 @@ exports.getMySubjects = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+// ✅ Add this to the bottom of controllers/authcontroller.js
+exports.getStaffAttendance = async (req, res) => {
+  try {
+    // Import the model locally if not already at the top of the file
+    const StaffAttendance = mongoose.model("StaffAttendance");
+
+    // req.user.username contains the STF-ID string from the JWT token
+    const attendance = await StaffAttendance.find({ 
+      staffid: req.user.username 
+    }).sort({ date: 1 });
+
+    res.status(200).json({ success: true, attendance });
+  } catch (error) {
+    console.error("Attendance Fetch Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
