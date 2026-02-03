@@ -305,13 +305,12 @@ exports.getMySubjects = async (req, res) => {
   }
 };
 
-// ✅ Add this to the bottom of controllers/authcontroller.js
 exports.getStaffAttendance = async (req, res) => {
   try {
-    // Import the model locally if not already at the top of the file
+    // Access the model. Ensure it's registered in your app.
     const StaffAttendance = mongoose.model("StaffAttendance");
 
-    // req.user.username contains the STF-ID string from the JWT token
+    // req.user.username contains the STF-ID (e.g., "STF-PR-1-8309") from your JWT token logic
     const attendance = await StaffAttendance.find({ 
       staffid: req.user.username 
     }).sort({ date: 1 });
