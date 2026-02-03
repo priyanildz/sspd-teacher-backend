@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
+const StaffAttendance = require("../models/StaffAttendance");
 
 exports.register = async (req, res) => {
   const { name, username, password, dob, emailaddress, contact, role, standard, division } = req.body;
@@ -307,10 +308,7 @@ exports.getMySubjects = async (req, res) => {
 
 exports.getStaffAttendance = async (req, res) => {
   try {
-    // Access the model. Ensure it's registered in your app.
-    const StaffAttendance = mongoose.model("StaffAttendance");
-
-    // req.user.username contains the STF-ID (e.g., "STF-PR-1-8309") from your JWT token logic
+    // req.user.username contains the STF-ID (e.g., "STF-PR-1-8309") from your login logic
     const attendance = await StaffAttendance.find({ 
       staffid: req.user.username 
     }).sort({ date: 1 });

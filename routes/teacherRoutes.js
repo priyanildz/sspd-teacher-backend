@@ -21,7 +21,6 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Example route to fetch personal attendance
 router.get("/my-attendance", authMiddleware, authcontroller.getStaffAttendance);
 
 module.exports = router;
