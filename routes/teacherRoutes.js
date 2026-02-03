@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const authMiddleware = require("../middleware/authMiddleware");
-const authcontroller = require("../controllers/authcontroller");
 
 // 🔍 GET all teachers except the current logged-in teacher
 router.get("/", authMiddleware, async (req, res) => {
@@ -19,8 +18,6 @@ router.get("/", authMiddleware, async (req, res) => {
     console.error("Fetch Teachers Error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch teachers" });
   }
-});
-
-router.get("/my-attendance", authMiddleware, authcontroller.getStaffAttendance);
+});zz
 
 module.exports = router;
