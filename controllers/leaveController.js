@@ -1,4 +1,4 @@
-const StaffLeave = require("../models/StaffLeave");
+// const StaffLeave = require("../models/StaffLeave");
 
 // exports.applyLeave = async (req, res) => {
 //   try {
@@ -29,6 +29,8 @@ const StaffLeave = require("../models/StaffLeave");
 //     res.status(500).json({ success: false, message: "Internal server error" });
 //   }
 // };
+
+const StaffLeave = require("../models/StaffLeave");
 
 exports.applyLeave = async (req, res) => {
   try {

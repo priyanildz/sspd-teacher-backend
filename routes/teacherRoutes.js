@@ -20,4 +20,7 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+// Example route to fetch personal attendance
+router.get("/my-attendance", authMiddleware, teacherController.getStaffAttendance);
+
 module.exports = router;
