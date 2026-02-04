@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
+const StaffAttendance = require("../models/StaffAttendance"); 
 
 exports.register = async (req, res) => {
   const { name, username, password, dob, emailaddress, contact, role, standard, division } = req.body;
@@ -301,6 +302,21 @@ exports.getMySubjects = async (req, res) => {
     res.status(200).json({ success: true, subjects: formattedSubjects });
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+
+exports.getStaffAttendance = async (req, res) => {
+  try {
+    // req.user.username contains the STF-ID (e.g., "STF-PR-1-8309") from your login logic
+    const attendance = await StaffAttendance.find({ 
+      staffid: req.user.username 
+    }).sort({ date: 1 });
+
+    res.status(200).json({ success: true, attendance });
+  } catch (error) {
+    console.error("Attendance Fetch Error:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

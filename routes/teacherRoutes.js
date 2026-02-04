@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const authcontroller = require("../controllers/authcontroller");
 const authMiddleware = require("../middleware/authMiddleware");
 
 // 🔍 GET all teachers except the current logged-in teacher
@@ -18,6 +19,8 @@ router.get("/", authMiddleware, async (req, res) => {
     console.error("Fetch Teachers Error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch teachers" });
   }
-});zz
+});
+
+router.get("/my-attendance", authMiddleware, authcontroller.getStaffAttendance);
 
 module.exports = router;
