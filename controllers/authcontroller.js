@@ -325,12 +325,21 @@ exports.getStaffAttendance = async (req, res) => {
 exports.getExamsByStandard = async (req, res) => {
   try {
     const { standard } = req.params;
-    // Query the 'exams' collection directly
     const exams = await mongoose.connection.db.collection('exams').find({ 
       standard: standard 
     }).toArray();
 
-    res.status(200).json({ success: true, exams });
+    // Map the results to ensure 'time' always contains 'time_display'
+    const formattedExams = exams.map(exam => ({
+      ...exam,
+      timetable: exam.timetable.map(slot => ({
+        ...slot,
+        // ✅ Explicitly map time_display to time for the frontend
+        time: slot.time_display || slot.time || 'N/A' 
+      }))
+    }));
+
+    res.status(200).json({ success: true, exams: formattedExams });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
