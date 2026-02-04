@@ -320,3 +320,18 @@ exports.getStaffAttendance = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+// Add this to controllers/authcontroller.js
+exports.getExamsByStandard = async (req, res) => {
+  try {
+    const { standard } = req.params;
+    // Query the 'exams' collection directly
+    const exams = await mongoose.connection.db.collection('exams').find({ 
+      standard: standard 
+    }).toArray();
+
+    res.status(200).json({ success: true, exams });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

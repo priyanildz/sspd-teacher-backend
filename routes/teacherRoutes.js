@@ -23,4 +23,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
 router.get("/my-attendance", authMiddleware, authcontroller.getStaffAttendance);
 
+// Add this to routes/teacherRoutes.js
+router.get("/exams/:standard", authMiddleware, authcontroller.getExamsByStandard);
+
 module.exports = router;
