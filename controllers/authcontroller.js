@@ -344,3 +344,19 @@ exports.getExamsByStandard = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Add this to controllers/authcontroller.js
+exports.getMyPaperEvaluations = async (req, res) => {
+  try {
+    const teacherId = req.user.userId; // Extracted from JWT token
+    
+    // Query the 'paperevaluations' collection for this specific teacher
+    const evaluations = await mongoose.connection.db.collection('paperevaluations').find({ 
+      assignedteacher: new mongoose.Types.ObjectId(teacherId)
+    }).toArray();
+
+    res.status(200).json({ success: true, evaluations });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
