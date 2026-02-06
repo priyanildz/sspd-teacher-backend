@@ -345,17 +345,44 @@ exports.getExamsByStandard = async (req, res) => {
   }
 };
 
-// Add this to controllers/authcontroller.js
+// // Add this to controllers/authcontroller.js
+// exports.getMyPaperEvaluations = async (req, res) => {
+//   try {
+//     const teacherId = req.user.userId; // Extracted from JWT token
+    
+//     // Query the 'paperevaluations' collection for this specific teacher
+//     const evaluations = await mongoose.connection.db.collection('paperevaluations').find({ 
+//       assignedteacher: new mongoose.Types.ObjectId(teacherId)
+//     }).toArray();
+
+//     res.status(200).json({ success: true, evaluations });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// Function for Evaluation (Checking)
 exports.getMyPaperEvaluations = async (req, res) => {
   try {
-    const teacherId = req.user.userId; // Extracted from JWT token
-    
-    // Query the 'paperevaluations' collection for this specific teacher
+    const teacherId = req.user.userId;
     const evaluations = await mongoose.connection.db.collection('paperevaluations').find({ 
       assignedteacher: new mongoose.Types.ObjectId(teacherId)
     }).toArray();
-
     res.status(200).json({ success: true, evaluations });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Function for Re-Checking
+exports.getMyRecheckings = async (req, res) => {
+  try {
+    const teacherId = req.user.userId;
+    const recheckings = await mongoose.connection.db.collection('recheckings').find({ 
+      assignedTo: new mongoose.Types.ObjectId(teacherId)
+    }).toArray();
+    res.status(200).json({ success: true, recheckings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

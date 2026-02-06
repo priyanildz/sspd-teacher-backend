@@ -27,6 +27,10 @@ router.get("/my-attendance", authMiddleware, authcontroller.getStaffAttendance);
 router.get("/exams/:standard", authMiddleware, authcontroller.getExamsByStandard);
 
 // Add this to routes/teacherRoutes.js
+// router.get("/assigned-papers", authMiddleware, authcontroller.getMyPaperEvaluations);
+
+// routes/teacherRoutes.js
 router.get("/assigned-papers", authMiddleware, authcontroller.getMyPaperEvaluations);
+router.get("/my-recheckings", authMiddleware, authcontroller.getMyRecheckings);
 
 module.exports = router;
