@@ -360,31 +360,3 @@ exports.getMyPaperEvaluations = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-// Add to controllers/authcontroller.js
-exports.getMyAssignedPapers = async (req, res) => {
-  try {
-    const teacherId = req.user.userId;
-    const db = mongoose.connection.db;
-
-    // 1. Fetch from paperevaluations (Checking)
-    const evaluations = await db.collection('paperevaluations').find({ 
-      assignedteacher: new mongoose.Types.ObjectId(teacherId)
-    }).toArray();
-
-    // 2. Fetch from recheckings (Re-Checking)
-    const recheckings = await db.collection('recheckings').find({ 
-      assignedTo: new mongoose.Types.ObjectId(teacherId)
-    }).toArray();
-
-    // 3. Label them to allow the UI to show different screens
-    const allPapers = [
-      ...evaluations.map(e => ({ ...e, moduleType: 'checking' })),
-      ...recheckings.map(r => ({ ...r, moduleType: 'rechecking' }))
-    ];
-
-    res.status(200).json({ success: true, papers: allPapers });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
