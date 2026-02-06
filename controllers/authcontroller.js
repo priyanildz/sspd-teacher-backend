@@ -360,3 +360,31 @@ exports.getMyPaperEvaluations = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Add this to controllers/authcontroller.js
+exports.getMyAssignedPapers = async (req, res) => {
+  try {
+    const teacherId = req.user.userId; // Extracted from JWT token
+    const db = mongoose.connection.db;
+
+    // 1. Fetch standard evaluations
+    const evaluations = await db.collection('paperevaluations').find({ 
+      assignedteacher: new mongoose.Types.ObjectId(teacherId)
+    }).toArray();
+
+    // 2. Fetch rechecking assignments
+    const recheckings = await db.collection('recheckings').find({ 
+      assignedTo: new mongoose.Types.ObjectId(teacherId)
+    }).toArray();
+
+    // 3. Combine them with a label to distinguish in UI
+    const allPapers = [
+      ...evaluations.map(e => ({ ...e, type: 'Evaluation' })),
+      ...recheckings.map(r => ({ ...r, type: 'Rechecking' }))
+    ];
+
+    res.status(200).json({ success: true, papers: allPapers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
