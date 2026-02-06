@@ -30,6 +30,6 @@ router.get("/exams/:standard", authMiddleware, authcontroller.getExamsByStandard
 router.get("/assigned-papers", authMiddleware, authcontroller.getMyPaperEvaluations);
 
 // routes/teacherRoutes.js
-router.get("/my-assigned-papers", authMiddleware, authcontroller.getMyAssignedPapers);
+// router.get("/my-assigned-papers", authMiddleware, authcontroller.getMyAssignedPapers);
 
 module.exports = router;
