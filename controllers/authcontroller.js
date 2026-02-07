@@ -433,3 +433,38 @@ exports.updateTestMarks = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// ✅ Fetch tests for the class where this teacher is the Class Teacher
+exports.getMyClassTests = async (req, res) => {
+  try {
+    const teacherId = req.user.userId;
+    const db = mongoose.connection.db;
+
+    // 1. Find which class this teacher manages
+    const teacherInfo = await User.findById(teacherId).select("managedClass"); 
+    // Assuming managedClass contains { standard: "10", division: "A" }
+
+    if (!teacherInfo || !teacherInfo.managedClass) {
+      return res.status(404).json({ success: false, message: "No class assigned to this teacher" });
+    }
+
+    const { standard, division } = teacherInfo.managedClass;
+
+    // 2. Fetch assessments for that specific class
+    const tests = await db.collection('termassessments').find({ 
+      standard: standard, 
+      division: division 
+    }).toArray();
+
+    res.status(200).json({ 
+      success: true, 
+      standard, 
+      division, 
+      classTeacher: req.user.name,
+      totalStudents: 50, // This can be dynamic based on a student count query
+      tests 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
