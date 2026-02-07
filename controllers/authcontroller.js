@@ -387,3 +387,49 @@ exports.getMyRecheckings = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Fetch all tests for a specific standard and division
+exports.getTermAssessments = async (req, res) => {
+  try {
+    const { standard, division } = req.params;
+    const db = mongoose.connection.db;
+    const tests = await db.collection('termassessments').find({ standard, division }).toArray();
+    res.status(200).json({ success: true, tests });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Create a new test record
+exports.createTestRecord = async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const newTest = {
+      ...req.body,
+      staffid: new mongoose.Types.ObjectId(req.user.userId),
+      createdAt: new Date(),
+      studentData: [] // Initialize empty marks array
+    };
+    await db.collection('termassessments').insertOne(newTest);
+    res.status(201).json({ success: true, message: "Test created successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update student marks for a specific test
+exports.updateTestMarks = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const { studentData } = req.body; // Array of { rollNo, name, marks }
+    const db = mongoose.connection.db;
+
+    await db.collection('termassessments').updateOne(
+      { _id: new mongoose.Types.ObjectId(testId) },
+      { $set: { studentData: studentData, updatedAt: new Date() } }
+    );
+    res.status(200).json({ success: true, message: "Marks updated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
