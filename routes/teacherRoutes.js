@@ -36,12 +36,6 @@ router.get("/my-recheckings", authMiddleware, authcontroller.getMyRecheckings);
 router.get("/tests/:standard/:division", authMiddleware, authcontroller.getTermAssessments);
 router.post("/tests/create", authMiddleware, authcontroller.createTestRecord);
 router.put("/tests/update-marks/:testId", authMiddleware, authcontroller.updateTestMarks);
-// Add this line with your other teacher routes
 // ✅ Corrected variable names to match your imports
-// router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
-// ✅ Fixes the "object Undefined" error by using the correct variable name
 router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
-
-
-
 module.exports = router;
