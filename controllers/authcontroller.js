@@ -434,3 +434,35 @@ exports.updateTestMarks = async (req, res) => {
   }
 };
 
+exports.getTeacherStandards = async (req, res) => {
+  try {
+    const teacherObjectId = new mongoose.Types.ObjectId(req.user.userId);
+    const db = mongoose.connection.db;
+
+    // 1. Get standard from class teacher assignment
+    const classTeacherDoc = await db.collection('classrooms').findOne({ staffid: teacherObjectId });
+    
+    // 2. Get standards from subject allocations
+    const subjectAllocation = await db.collection('subjectallocations').findOne({ teacher: teacherObjectId });
+
+    let standardsSet = new Set();
+
+    if (classTeacherDoc && classTeacherDoc.standard) {
+      standardsSet.add(classTeacherDoc.standard.toString());
+    }
+
+    if (subjectAllocation && Array.isArray(subjectAllocation.standards)) {
+      subjectAllocation.standards.forEach(std => {
+        if (std) standardsSet.add(std.toString());
+      });
+    }
+
+    // Convert Set back to a sorted List
+    const uniqueStandards = Array.from(standardsSet).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+
+    res.status(200).json({ success: true, standards: uniqueStandards });
+  } catch (error) {
+    console.error("Fetch Teacher Standards Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
