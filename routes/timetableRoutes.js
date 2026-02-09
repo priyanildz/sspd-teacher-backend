@@ -122,22 +122,29 @@ router.get('/:standard/:division/:date', async (req, res) => {
             date: { $regex: `^${dateString}` }
         }).toArray();
 
-        // Updated safe mapping in timetableRoutes.js
+        // ✅ DEFENSIVE MAPPING LOGIC
 const updatedPeriods = dayData.periods.map(period => {
+    // Ensure period exists and has a periodNumber
+    const currentPeriodNum = (period && period.periodNumber) ? period.periodNumber.toString() : null;
+
     const hasTest = testsToday.find(t => {
-        // Ensure both values exist before calling toString() to prevent 500 errors
-        if (!t || t.lecNo === undefined || t.lecNo === null) return false;
-        if (!period || period.periodNumber === undefined || period.periodNumber === null) return false;
+        // 1. Ensure test record exists
+        if (!t) return false;
         
-        return t.lecNo.toString() === period.periodNumber.toString();
+        // 2. Safely get lecNo as a string (handling both String and Number types)
+        const testLecNo = (t.lecNo !== undefined && t.lecNo !== null) ? t.lecNo.toString() : null;
+        
+        // 3. Compare only if both exist
+        return testLecNo !== null && currentPeriodNum !== null && testLecNo === currentPeriodNum;
     });
 
     return {
         ...period,
         isTest: !!hasTest,
         testDetails: hasTest || null,
-        subject: hasTest ? hasTest.subject : (period.subject || "No Subject"),
-        topic: hasTest ? hasTest.topic : (period.topic || "")
+        // Override subject/topic if test exists, else keep original or default to "No Subject"
+        subject: hasTest ? (hasTest.subject || "Test") : (period.subject || "No Subject"),
+        topic: hasTest ? (hasTest.topic || "") : (period.topic || "")
     };
 });
 
