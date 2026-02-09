@@ -487,3 +487,35 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getAvailableLectures = async (req, res) => {
+  try {
+    const { standard, division, subject, date } = req.query;
+    const db = mongoose.connection.db;
+
+    // Convert date to start and end of day to find all entries for that day
+    const searchDate = new Date(date);
+    searchDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(searchDate);
+    nextDay.setDate(searchDate.getDate() + 1);
+
+    // Find existing tests for this specific criteria
+    const existingTests = await db.collection('termassessments').find({
+      standard,
+      division,
+      subject,
+      date: { $gte: searchDate.toISOString(), $lt: nextDay.toISOString() }
+    }).toArray();
+
+    // Map existing lecture numbers
+    const usedLecs = existingTests.map(t => parseInt(t.lecNo)).filter(n => !isNaN(n));
+    
+    // Suggest the next 3 available slots (e.g., if 1 is used, suggest 2, 3, 4)
+    const startLec = usedLecs.length > 0 ? Math.max(...usedLecs) + 1 : 1;
+    const availableLecs = [startLec, startLec + 1, startLec + 2].map(String);
+
+    res.status(200).json({ success: true, availableLecs });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

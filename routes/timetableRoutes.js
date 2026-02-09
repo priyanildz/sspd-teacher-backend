@@ -47,7 +47,46 @@ router.post('/upload', async (req, res) => {
 //         // Even on error, return an empty array to prevent Flutter crash
 //         res.status(500).json([]); 
 //     }
+// }); }
+
+
+// router.get('/:standard/:division/:date', async (req, res) => {
+//     const { standard, division, date } = req.params;
+
+//     try {
+//         const result = await Timetable.findOne({ standard, division });
+
+//         if (!result || !result.timetable) {
+//             return res.status(200).json([]);
+//         }
+
+//         const requestedDate = new Date(date);
+//         if (isNaN(requestedDate.getTime())) {
+//             return res.status(200).json([]);
+//         }
+
+//         const dayName = requestedDate.toLocaleDateString("en-US", {
+//             weekday: "long"
+//         });
+
+//         const dayData = result.timetable.find(
+//             // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
+//             d => d.day.toLowerCase() === dayName.toLowerCase()
+//         );
+
+//         if (!dayData || !dayData.periods) {
+//             return res.status(200).json([]);
+//         }
+
+//         res.status(200).json(dayData.periods);
+
+//     } catch (err) {
+//         console.error("Fetch Error:", err);
+//         res.status(500).json([]);
+//     }
 // });
+
+
 router.get('/:standard/:division/:date', async (req, res) => {
     const { standard, division, date } = req.params;
 
@@ -63,12 +102,8 @@ router.get('/:standard/:division/:date', async (req, res) => {
             return res.status(200).json([]);
         }
 
-        const dayName = requestedDate.toLocaleDateString("en-US", {
-            weekday: "long"
-        });
-
+        const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
         const dayData = result.timetable.find(
-            // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
             d => d.day.toLowerCase() === dayName.toLowerCase()
         );
 
@@ -76,7 +111,30 @@ router.get('/:standard/:division/:date', async (req, res) => {
             return res.status(200).json([]);
         }
 
-        res.status(200).json(dayData.periods);
+        // ✅ NEW: Fetch tests for this class on this specific date
+        const db = mongoose.connection.db;
+        const searchDate = new Date(date);
+        searchDate.setHours(0, 0, 0, 0);
+        const nextDay = new Date(searchDate);
+        nextDay.setDate(searchDate.getDate() + 1);
+
+        const testsToday = await db.collection('termassessments').find({
+            standard,
+            division,
+            date: { $gte: searchDate.toISOString(), $lt: nextDay.toISOString() }
+        }).toArray();
+
+        // ✅ MAP LOGIC: Attach isTest flag to periods that have a test record
+        const updatedPeriods = dayData.periods.map(period => {
+            const hasTest = testsToday.find(t => t.lecNo == period.periodNumber);
+            return {
+                ...period,
+                isTest: !!hasTest, // true if a test exists, false otherwise
+                testDetails: hasTest || null
+            };
+        });
+
+        res.status(200).json(updatedPeriods);
 
     } catch (err) {
         console.error("Fetch Error:", err);
