@@ -95,53 +95,62 @@ router.get('/:standard/:division/:date', async (req, res) => {
         const result = await Timetable.findOne({ standard, division });
 
         if (!result || !result.timetable) {
+            console.log("No Timetable found for Std:", standard, "Div:", division);
             return res.status(200).json([]);
         }
 
         const requestedDate = new Date(date);
         if (isNaN(requestedDate.getTime())) {
-            return res.status(200).json([]);
+            return res.status(400).json({ success: false, message: "Invalid Date" });
         }
 
+        // Get the weekday name (e.g., "Monday")
         const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
+        
+        // Find the specific day in the timetable array
         const dayData = result.timetable.find(
-            d => d.day.toLowerCase() === dayName.toLowerCase()
+            d => d.day.toLowerCase().trim() === dayName.toLowerCase().trim()
         );
 
         if (!dayData || !dayData.periods) {
+            console.log("No periods found for day:", dayName);
             return res.status(200).json([]);
         }
 
-        // ✅ NEW: Fetch tests for this class on this specific date
+        // Fetch tests - Using a string-based date match to avoid ISO timezone issues
         const db = mongoose.connection.db;
-        const searchDate = new Date(date);
-        searchDate.setHours(0, 0, 0, 0);
-        const nextDay = new Date(searchDate);
-        nextDay.setDate(searchDate.getDate() + 1);
+        const dateString = requestedDate.toISOString().split('T')[0]; // Result: "2026-02-09"
 
         const testsToday = await db.collection('termassessments').find({
-            standard,
-            division,
-            date: { $gte: searchDate.toISOString(), $lt: nextDay.toISOString() }
+            standard: standard,
+            division: division,
+            date: { $regex: `^${dateString}` } // Matches any time on that specific date string
         }).toArray();
 
-        // ✅ MAP LOGIC: Attach isTest flag to periods that have a test record
+        // Map through periods and attach tests
         const updatedPeriods = dayData.periods.map(period => {
-            const hasTest = testsToday.find(t => t.lecNo == period.periodNumber);
+            // Find a test that matches the lecture number
+            const hasTest = testsToday.find(t => t.lecNo.toString() === period.periodNumber.toString());
             return {
                 ...period,
-                isTest: !!hasTest, // true if a test exists, false otherwise
-                testDetails: hasTest || null
+                isTest: !!hasTest,
+                testDetails: hasTest || null,
+                // If it's a test, you might want to override the subject/topic
+                subject: hasTest ? hasTest.subject : period.subject,
+                topic: hasTest ? hasTest.topic : (period.topic || "")
             };
         });
 
         res.status(200).json(updatedPeriods);
 
     } catch (err) {
-        console.error("Fetch Error:", err);
+        console.error("Timetable Fetch Error:", err);
         res.status(500).json([]);
     }
 });
+
+
+
 
 // ✅ NEW: Get all lectures of a teacher for a given date
 router.get('/teacher/:teacherId/:date', async (req, res) => {
