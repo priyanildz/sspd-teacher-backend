@@ -39,7 +39,7 @@ router.put("/tests/update-marks/:testId", authMiddleware, authcontroller.updateT
 // Add this line with your other teacher routes
 // ✅ Corrected variable names to match your imports
 // router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
-// Change the last line of your teacherRoutes.js to this:
+// ✅ Fixes the "object Undefined" error by using the correct variable name
 router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
 
 
