@@ -92,48 +92,41 @@ router.get('/:standard/:division/:date', async (req, res) => {
     const { standard, division, date } = req.params;
 
     try {
-        // ✅ 1. Use .lean() to get a plain JavaScript object instead of a Mongoose Document
+        // Use .lean() to get a plain JS object, which prevents spread operator issues
         const result = await Timetable.findOne({ standard, division }).lean();
 
-        if (!result || !result.timetable) {
-            return res.status(200).json([]);
-        }
+        if (!result || !result.timetable) return res.status(200).json([]);
 
         const requestedDate = new Date(date);
-        if (isNaN(requestedDate.getTime())) {
-            return res.status(200).json([]);
-        }
+        if (isNaN(requestedDate.getTime())) return res.status(200).json([]);
 
         const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
         const dayData = result.timetable.find(
             d => d.day && d.day.toLowerCase().trim() === dayName.toLowerCase().trim()
         );
 
-        if (!dayData || !dayData.periods) {
-            return res.status(200).json([]);
-        }
+        if (!dayData || !dayData.periods) return res.status(200).json([]);
 
         const db = mongoose.connection.db;
         const dateString = requestedDate.toISOString().split('T')[0];
 
-        // Fetch tests for this date
+        // Fetch tests for this date using regex for safety
         const testsToday = await db.collection('termassessments').find({
             standard: standard,
             division: division,
             date: { $regex: `^${dateString}` }
         }).toArray();
 
-        // ✅ 2. Safe mapping with plain objects
+        // Safe mapping to prevent "reading toString of null" errors
         const updatedPeriods = dayData.periods.map(period => {
-            const currentPeriodNum = period.periodNumber ? period.periodNumber.toString() : null;
+            const currentPeriodNum = (period && period.periodNumber) ? period.periodNumber.toString() : null;
 
             const hasTest = testsToday.find(t => {
-                if (!t || !t.lecNo) return false;
+                if (!t || t.lecNo === undefined || t.lecNo === null) return false;
                 return t.lecNo.toString() === currentPeriodNum;
             });
 
             return {
-                // Spread now works correctly because we used .lean()
                 ...period,
                 isTest: !!hasTest,
                 testDetails: hasTest || null,
@@ -146,7 +139,7 @@ router.get('/:standard/:division/:date', async (req, res) => {
 
     } catch (err) {
         console.error("Timetable Fetch Error:", err);
-        res.status(200).json([]); 
+        res.status(200).json([]); // Fallback to empty list instead of crashing the server
     }
 });
 

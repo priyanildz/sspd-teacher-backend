@@ -38,6 +38,8 @@ router.post("/tests/create", authMiddleware, authcontroller.createTestRecord);
 router.put("/tests/update-marks/:testId", authMiddleware, authcontroller.updateTestMarks);
 // Add this line with your other teacher routes
 // ✅ Corrected variable names to match your imports
+// router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
+// Change the last line of your teacherRoutes.js to this:
 router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
 
 
