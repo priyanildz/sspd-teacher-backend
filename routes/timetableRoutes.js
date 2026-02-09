@@ -24,7 +24,7 @@ router.post('/upload', async (req, res) => {
 //     try {
 //         // 1. Find the timetable document
 //         const result = await Timetable.findOne({ standard, division });
-
+        
 //         // If no document exists for this class, return empty array
 //         if (!result || !result.timetable) {
 //             return res.status(200).json([]); 
@@ -89,66 +89,65 @@ router.post('/upload', async (req, res) => {
 
 
 router.get('/:standard/:division/:date', async (req, res) => {
-  const { standard, division, date } = req.params;
+    const { standard, division, date } = req.params;
 
-  try {
-    const result = await Timetable.findOne({ standard, division });
+    try {
+        const result = await Timetable.findOne({ standard, division });
 
-    if (!result || !result.timetable) {
-      return res.status(200).json([]);
-    }
+        if (!result || !result.timetable) {
+            return res.status(200).json([]);
+        }
 
-    const requestedDate = new Date(date);
-    if (isNaN(requestedDate.getTime())) {
-      return res.status(200).json([]);
-    }
+        const requestedDate = new Date(date);
+        if (isNaN(requestedDate.getTime())) {
+            return res.status(200).json([]);
+        }
 
-    const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
-    const dayData = result.timetable.find(
-      d => d.day && d.day.toLowerCase().trim() === dayName.toLowerCase().trim()
-    );
+        const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
+        const dayData = result.timetable.find(
+            d => d.day && d.day.toLowerCase().trim() === dayName.toLowerCase().trim()
+        );
 
-    if (!dayData || !dayData.periods) {
-      return res.status(200).json([]);
-    }
+        if (!dayData || !dayData.periods) {
+            return res.status(200).json([]);
+        }
 
-    // Fetch tests for this date
-    const db = mongoose.connection.db;
-    const dateString = requestedDate.toISOString().split('T')[0];
+        // Fetch tests for this date
+        const db = mongoose.connection.db;
+        const dateString = requestedDate.toISOString().split('T')[0];
 
-    const testsToday = await db.collection('termassessments').find({
-      standard: standard,
-      division: division,
-      date: { $regex: `^${dateString}` }
-    }).toArray();
+        const testsToday = await db.collection('termassessments').find({
+            standard: standard,
+            division: division,
+            date: { $regex: `^${dateString}` }
+        }).toArray();
 
-    // ✅ Corrected SAFE MAP LOGIC
-    const updatedPeriods = dayData.periods.map(period => {
-      const hasTest = testsToday.find(t => {
-        // Add null checks for both lecNo and periodNumber
+        // Updated safe mapping in timetableRoutes.js
+const updatedPeriods = dayData.periods.map(period => {
+    const hasTest = testsToday.find(t => {
+        // Ensure both values exist before calling toString() to prevent 500 errors
         if (!t || t.lecNo === undefined || t.lecNo === null) return false;
         if (!period || period.periodNumber === undefined || period.periodNumber === null) return false;
-
-        // Convert both to strings to ensure "1" matches 1
+        
         return t.lecNo.toString() === period.periodNumber.toString();
-      });
+    });
 
-      return {
+    return {
         ...period,
         isTest: !!hasTest,
         testDetails: hasTest || null,
         subject: hasTest ? hasTest.subject : (period.subject || "No Subject"),
         topic: hasTest ? hasTest.topic : (period.topic || "")
-      };
-    });
+    };
+});
 
-    res.status(200).json(updatedPeriods);
+        res.status(200).json(updatedPeriods);
 
-  } catch (err) {
-    console.error("Timetable Fetch Error:", err);
-    // Return empty array instead of 500 to keep the app running
-    res.status(200).json([]);
-  }
+    } catch (err) {
+        console.error("Timetable Fetch Error:", err);
+        // Return empty array instead of 500 to keep the app running
+        res.status(200).json([]); 
+    }
 });
 
 
