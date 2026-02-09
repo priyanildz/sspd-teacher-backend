@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Timetable = require('../models/Timetable');
-const mongoose = require('mongoose');
 
 router.post('/upload', async (req, res) => {
   try {
@@ -48,103 +47,42 @@ router.post('/upload', async (req, res) => {
 //         // Even on error, return an empty array to prevent Flutter crash
 //         res.status(500).json([]); 
 //     }
-// }); }
-
-
-// router.get('/:standard/:division/:date', async (req, res) => {
-//     const { standard, division, date } = req.params;
-
-//     try {
-//         const result = await Timetable.findOne({ standard, division });
-
-//         if (!result || !result.timetable) {
-//             return res.status(200).json([]);
-//         }
-
-//         const requestedDate = new Date(date);
-//         if (isNaN(requestedDate.getTime())) {
-//             return res.status(200).json([]);
-//         }
-
-//         const dayName = requestedDate.toLocaleDateString("en-US", {
-//             weekday: "long"
-//         });
-
-//         const dayData = result.timetable.find(
-//             // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
-//             d => d.day.toLowerCase() === dayName.toLowerCase()
-//         );
-
-//         if (!dayData || !dayData.periods) {
-//             return res.status(200).json([]);
-//         }
-
-//         res.status(200).json(dayData.periods);
-
-//     } catch (err) {
-//         console.error("Fetch Error:", err);
-//         res.status(500).json([]);
-//     }
 // });
-
-
 router.get('/:standard/:division/:date', async (req, res) => {
     const { standard, division, date } = req.params;
 
     try {
-        // Use .lean() to get a plain JS object, which prevents spread operator issues
-        const result = await Timetable.findOne({ standard, division }).lean();
+        const result = await Timetable.findOne({ standard, division });
 
-        if (!result || !result.timetable) return res.status(200).json([]);
+        if (!result || !result.timetable) {
+            return res.status(200).json([]);
+        }
 
         const requestedDate = new Date(date);
-        if (isNaN(requestedDate.getTime())) return res.status(200).json([]);
+        if (isNaN(requestedDate.getTime())) {
+            return res.status(200).json([]);
+        }
 
-        const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
-        const dayData = result.timetable.find(
-            d => d.day && d.day.toLowerCase().trim() === dayName.toLowerCase().trim()
-        );
-
-        if (!dayData || !dayData.periods) return res.status(200).json([]);
-
-        const db = mongoose.connection.db;
-        const dateString = requestedDate.toISOString().split('T')[0];
-
-        // Fetch tests for this date using regex for safety
-        const testsToday = await db.collection('termassessments').find({
-            standard: standard,
-            division: division,
-            date: { $regex: `^${dateString}` }
-        }).toArray();
-
-        // Safe mapping to prevent "reading toString of null" errors
-        const updatedPeriods = dayData.periods.map(period => {
-            const currentPeriodNum = (period && period.periodNumber) ? period.periodNumber.toString() : null;
-
-            const hasTest = testsToday.find(t => {
-                if (!t || t.lecNo === undefined || t.lecNo === null) return false;
-                return t.lecNo.toString() === currentPeriodNum;
-            });
-
-            return {
-                ...period,
-                isTest: !!hasTest,
-                testDetails: hasTest || null,
-                subject: hasTest ? (hasTest.subject || "Test") : (period.subject || "No Subject"),
-                topic: hasTest ? (hasTest.topic || "") : (period.topic || "")
-            };
+        const dayName = requestedDate.toLocaleDateString("en-US", {
+            weekday: "long"
         });
 
-        res.status(200).json(updatedPeriods);
+        const dayData = result.timetable.find(
+            // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
+            d => d.day.toLowerCase() === dayName.toLowerCase()
+        );
+
+        if (!dayData || !dayData.periods) {
+            return res.status(200).json([]);
+        }
+
+        res.status(200).json(dayData.periods);
 
     } catch (err) {
-        console.error("Timetable Fetch Error:", err);
-        res.status(200).json([]); // Fallback to empty list instead of crashing the server
+        console.error("Fetch Error:", err);
+        res.status(500).json([]);
     }
 });
-
-
-
 
 // ✅ NEW: Get all lectures of a teacher for a given date
 router.get('/teacher/:teacherId/:date', async (req, res) => {
