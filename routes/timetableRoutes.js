@@ -92,7 +92,8 @@ router.get('/:standard/:division/:date', async (req, res) => {
     const { standard, division, date } = req.params;
 
     try {
-        const result = await Timetable.findOne({ standard, division });
+        // ✅ 1. Use .lean() to get a plain JavaScript object instead of a Mongoose Document
+        const result = await Timetable.findOne({ standard, division }).lean();
 
         if (!result || !result.timetable) {
             return res.status(200).json([]);
@@ -112,47 +113,39 @@ router.get('/:standard/:division/:date', async (req, res) => {
             return res.status(200).json([]);
         }
 
-        // Fetch tests for this date
         const db = mongoose.connection.db;
         const dateString = requestedDate.toISOString().split('T')[0];
 
+        // Fetch tests for this date
         const testsToday = await db.collection('termassessments').find({
             standard: standard,
             division: division,
             date: { $regex: `^${dateString}` }
         }).toArray();
 
-        // ✅ DEFENSIVE MAPPING LOGIC
-const updatedPeriods = dayData.periods.map(period => {
-    // Ensure period exists and has a periodNumber
-    const currentPeriodNum = (period && period.periodNumber) ? period.periodNumber.toString() : null;
+        // ✅ 2. Safe mapping with plain objects
+        const updatedPeriods = dayData.periods.map(period => {
+            const currentPeriodNum = period.periodNumber ? period.periodNumber.toString() : null;
 
-    const hasTest = testsToday.find(t => {
-        // 1. Ensure test record exists
-        if (!t) return false;
-        
-        // 2. Safely get lecNo as a string (handling both String and Number types)
-        const testLecNo = (t.lecNo !== undefined && t.lecNo !== null) ? t.lecNo.toString() : null;
-        
-        // 3. Compare only if both exist
-        return testLecNo !== null && currentPeriodNum !== null && testLecNo === currentPeriodNum;
-    });
+            const hasTest = testsToday.find(t => {
+                if (!t || !t.lecNo) return false;
+                return t.lecNo.toString() === currentPeriodNum;
+            });
 
-    return {
-        ...period,
-        isTest: !!hasTest,
-        testDetails: hasTest || null,
-        // Override subject/topic if test exists, else keep original or default to "No Subject"
-        subject: hasTest ? (hasTest.subject || "Test") : (period.subject || "No Subject"),
-        topic: hasTest ? (hasTest.topic || "") : (period.topic || "")
-    };
-});
+            return {
+                // Spread now works correctly because we used .lean()
+                ...period,
+                isTest: !!hasTest,
+                testDetails: hasTest || null,
+                subject: hasTest ? (hasTest.subject || "Test") : (period.subject || "No Subject"),
+                topic: hasTest ? (hasTest.topic || "") : (period.topic || "")
+            };
+        });
 
         res.status(200).json(updatedPeriods);
 
     } catch (err) {
         console.error("Timetable Fetch Error:", err);
-        // Return empty array instead of 500 to keep the app running
         res.status(200).json([]); 
     }
 });
