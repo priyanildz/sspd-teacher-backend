@@ -434,35 +434,54 @@ exports.updateTestMarks = async (req, res) => {
   }
 };
 
-exports.getTeacherStandards = async (req, res) => {
+exports.getTeacherAssignmentOptions = async (req, res) => {
   try {
     const teacherObjectId = new mongoose.Types.ObjectId(req.user.userId);
     const db = mongoose.connection.db;
 
-    // 1. Get standard from class teacher assignment
+    // 1. Fetch data from both possible sources
     const classTeacherDoc = await db.collection('classrooms').findOne({ staffid: teacherObjectId });
-    
-    // 2. Get standards from subject allocations
     const subjectAllocation = await db.collection('subjectallocations').findOne({ teacher: teacherObjectId });
 
     let standardsSet = new Set();
+    let divisionsSet = new Set();
+    let subjectsSet = new Set();
 
-    if (classTeacherDoc && classTeacherDoc.standard) {
-      standardsSet.add(classTeacherDoc.standard.toString());
+    // 2. Process Class Teacher Assignment
+    if (classTeacherDoc) {
+      if (classTeacherDoc.standard) standardsSet.add(classTeacherDoc.standard.toString());
+      if (classTeacherDoc.division) divisionsSet.add(classTeacherDoc.division.toString());
     }
 
-    if (subjectAllocation && Array.isArray(subjectAllocation.standards)) {
-      subjectAllocation.standards.forEach(std => {
-        if (std) standardsSet.add(std.toString());
-      });
+    // 3. Process Subject Allocations
+    if (subjectAllocation) {
+      // Add Standards
+      if (Array.isArray(subjectAllocation.standards)) {
+        subjectAllocation.standards.forEach(s => s && standardsSet.add(s.toString()));
+      }
+      // Add Subjects
+      if (Array.isArray(subjectAllocation.subjects)) {
+        subjectAllocation.subjects.forEach(sub => sub && subjectsSet.add(sub.toString()));
+      }
+      // Add Divisions (Handling nested arrays as seen in your MongoDB screenshot)
+      if (Array.isArray(subjectAllocation.divisions)) {
+        subjectAllocation.divisions.forEach(div => {
+          if (Array.isArray(div)) {
+            div.forEach(d => d && divisionsSet.add(d.toString()));
+          } else if (div) {
+            divisionsSet.add(div.toString());
+          }
+        });
+      }
     }
 
-    // Convert Set back to a sorted List
-    const uniqueStandards = Array.from(standardsSet).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
-
-    res.status(200).json({ success: true, standards: uniqueStandards });
+    res.status(200).json({
+      success: true,
+      standards: Array.from(standardsSet).sort(),
+      divisions: Array.from(divisionsSet).sort(),
+      subjects: Array.from(subjectsSet).sort(),
+    });
   } catch (error) {
-    console.error("Fetch Teacher Standards Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
