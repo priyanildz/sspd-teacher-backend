@@ -439,7 +439,7 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
     const teacherObjectId = new mongoose.Types.ObjectId(req.user.userId);
     const db = mongoose.connection.db;
 
-    // 1. Fetch data from both possible sources
+    // Fetch from classrooms (Class Teacher role) and subjectallocations (Subject Teacher role)
     const classTeacherDoc = await db.collection('classrooms').findOne({ staffid: teacherObjectId });
     const subjectAllocation = await db.collection('subjectallocations').findOne({ teacher: teacherObjectId });
 
@@ -447,25 +447,23 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
     let divisionsSet = new Set();
     let subjectsSet = new Set();
 
-    // 2. Process Class Teacher Assignment
+    // Process Class Teacher assignment
     if (classTeacherDoc) {
       if (classTeacherDoc.standard) standardsSet.add(classTeacherDoc.standard.toString());
       if (classTeacherDoc.division) divisionsSet.add(classTeacherDoc.division.toString());
     }
 
-    // 3. Process Subject Allocations
+    // Process Subject Allocations (Handling Arrays as seen in your DB screenshot)
     if (subjectAllocation) {
-      // Add Standards
       if (Array.isArray(subjectAllocation.standards)) {
         subjectAllocation.standards.forEach(s => s && standardsSet.add(s.toString()));
       }
-      // Add Subjects
       if (Array.isArray(subjectAllocation.subjects)) {
         subjectAllocation.subjects.forEach(sub => sub && subjectsSet.add(sub.toString()));
       }
-      // Add Divisions (Handling nested arrays as seen in your MongoDB screenshot)
       if (Array.isArray(subjectAllocation.divisions)) {
         subjectAllocation.divisions.forEach(div => {
+          // Flatten if it's a nested array, otherwise add directly
           if (Array.isArray(div)) {
             div.forEach(d => d && divisionsSet.add(d.toString()));
           } else if (div) {
@@ -475,13 +473,17 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
       }
     }
 
-    res.status(200).json({
+    const responseData = {
       success: true,
       standards: Array.from(standardsSet).sort(),
       divisions: Array.from(divisionsSet).sort(),
       subjects: Array.from(subjectsSet).sort(),
-    });
+    };
+
+    console.log("Teacher Options Sent:", responseData); // Check your terminal logs!
+    res.status(200).json(responseData);
   } catch (error) {
+    console.error("Backend Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
