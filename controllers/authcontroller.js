@@ -436,10 +436,11 @@ exports.updateTestMarks = async (req, res) => {
 
 exports.getTeacherAssignmentOptions = async (req, res) => {
   try {
+    const mongoose = require("mongoose");
     const teacherObjectId = new mongoose.Types.ObjectId(req.user.userId);
     const db = mongoose.connection.db;
 
-    // Fetch from classrooms (Class Teacher role) and subjectallocations (Subject Teacher role)
+    // Pull from both collections
     const classTeacherDoc = await db.collection('classrooms').findOne({ staffid: teacherObjectId });
     const subjectAllocation = await db.collection('subjectallocations').findOne({ teacher: teacherObjectId });
 
@@ -447,22 +448,24 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
     let divisionsSet = new Set();
     let subjectsSet = new Set();
 
-    // 1. Process Class Teacher assignment
+    // 1. Process Class Teacher Role
     if (classTeacherDoc) {
       if (classTeacherDoc.standard) standardsSet.add(classTeacherDoc.standard.toString());
       if (classTeacherDoc.division) divisionsSet.add(classTeacherDoc.division.toString());
     }
 
-    // 2. Process Subject Allocations (Handling the Array structure from your screenshot)
+    // 2. Process Subject Allocation (Matches your image_5a2fe5.png)
     if (subjectAllocation) {
+      // Handles standards: ["1"]
       if (Array.isArray(subjectAllocation.standards)) {
         subjectAllocation.standards.forEach(s => s && standardsSet.add(s.toString()));
       }
+      // Handles subjects: ["English"]
       if (Array.isArray(subjectAllocation.subjects)) {
         subjectAllocation.subjects.forEach(sub => sub && subjectsSet.add(sub.toString()));
       }
+      // Handles divisions: ["A", "B", "C", "D", "E"]
       if (Array.isArray(subjectAllocation.divisions)) {
-        // Your DB shows divisions as an Array(5) containing "A", "B", etc.
         subjectAllocation.divisions.forEach(div => {
           if (Array.isArray(div)) {
             div.forEach(d => d && divisionsSet.add(d.toString()));
@@ -480,6 +483,7 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
       subjects: Array.from(subjectsSet).sort(),
     });
   } catch (error) {
+    console.error("Internal Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
