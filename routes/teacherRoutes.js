@@ -37,5 +37,6 @@ router.get("/tests/:standard/:division", authMiddleware, authcontroller.getTermA
 router.post("/tests/create", authMiddleware, authcontroller.createTestRecord);
 router.put("/tests/update-marks/:testId", authMiddleware, authcontroller.updateTestMarks);
 // Add this line with your other teacher routes
-// router.get('/my-assignment-options', auth, authController.getTeacherAssignmentOptions);
+// Add this line with your other teacher routes
+router.get('/my-assignment-options', auth, authController.getTeacherAssignmentOptions);
 module.exports = router;
