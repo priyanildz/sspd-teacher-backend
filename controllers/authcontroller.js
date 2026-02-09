@@ -447,13 +447,13 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
     let divisionsSet = new Set();
     let subjectsSet = new Set();
 
-    // Process Class Teacher assignment
+    // 1. Process Class Teacher assignment
     if (classTeacherDoc) {
       if (classTeacherDoc.standard) standardsSet.add(classTeacherDoc.standard.toString());
       if (classTeacherDoc.division) divisionsSet.add(classTeacherDoc.division.toString());
     }
 
-    // Process Subject Allocations (Handling Arrays as seen in your DB screenshot)
+    // 2. Process Subject Allocations (Handling the Array structure from your screenshot)
     if (subjectAllocation) {
       if (Array.isArray(subjectAllocation.standards)) {
         subjectAllocation.standards.forEach(s => s && standardsSet.add(s.toString()));
@@ -462,8 +462,8 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
         subjectAllocation.subjects.forEach(sub => sub && subjectsSet.add(sub.toString()));
       }
       if (Array.isArray(subjectAllocation.divisions)) {
+        // Your DB shows divisions as an Array(5) containing "A", "B", etc.
         subjectAllocation.divisions.forEach(div => {
-          // Flatten if it's a nested array, otherwise add directly
           if (Array.isArray(div)) {
             div.forEach(d => d && divisionsSet.add(d.toString()));
           } else if (div) {
@@ -473,17 +473,13 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
       }
     }
 
-    const responseData = {
+    res.status(200).json({
       success: true,
-      standards: Array.from(standardsSet).sort(),
+      standards: Array.from(standardsSet).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})),
       divisions: Array.from(divisionsSet).sort(),
       subjects: Array.from(subjectsSet).sort(),
-    };
-
-    console.log("Teacher Options Sent:", responseData); // Check your terminal logs!
-    res.status(200).json(responseData);
+    });
   } catch (error) {
-    console.error("Backend Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
