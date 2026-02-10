@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Timetable = require('../models/Timetable');
+const mongoose = require('mongoose');
 
 router.post('/upload', async (req, res) => {
   try {
