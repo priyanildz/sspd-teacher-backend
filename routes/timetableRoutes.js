@@ -49,41 +49,90 @@ router.post('/upload', async (req, res) => {
 //         res.status(500).json([]); 
 //     }
 // });
+// router.get('/:standard/:division/:date', async (req, res) => {
+//     const { standard, division, date } = req.params;
+
+//     try {
+//         const result = await Timetable.findOne({ standard, division });
+
+//         if (!result || !result.timetable) {
+//             return res.status(200).json([]);
+//         }
+
+//         const requestedDate = new Date(date);
+//         if (isNaN(requestedDate.getTime())) {
+//             return res.status(200).json([]);
+//         }
+
+//         const dayName = requestedDate.toLocaleDateString("en-US", {
+//             weekday: "long"
+//         });
+
+//         const dayData = result.timetable.find(
+//             // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
+//             d => d.day.toLowerCase() === dayName.toLowerCase()
+//         );
+
+//         if (!dayData || !dayData.periods) {
+//             return res.status(200).json([]);
+//         }
+
+//         res.status(200).json(dayData.periods);
+
+//     } catch (err) {
+//         console.error("Fetch Error:", err);
+//         res.status(500).json([]);
+//     }
+// });
+
+
 router.get('/:standard/:division/:date', async (req, res) => {
     const { standard, division, date } = req.params;
-
     try {
         const result = await Timetable.findOne({ standard, division });
-
-        if (!result || !result.timetable) {
-            return res.status(200).json([]);
-        }
+        if (!result || !result.timetable) return res.status(200).json([]);
 
         const requestedDate = new Date(date);
-        if (isNaN(requestedDate.getTime())) {
-            return res.status(200).json([]);
-        }
+        const dayName = requestedDate.toLocaleDateString("en-US", { weekday: "long" });
+        const dayData = result.timetable.find(d => d.day.toLowerCase() === dayName.toLowerCase());
 
-        const dayName = requestedDate.toLocaleDateString("en-US", {
-            weekday: "long"
-        });
+        if (!dayData || !dayData.periods) return res.status(200).json([]);
 
-        const dayData = result.timetable.find(
-            // d => d.day && d.day.trim().toLowerCase() === dayName.toLowerCase()
-            d => d.day.toLowerCase() === dayName.toLowerCase()
-        );
+        // ✅ LINKING COLLECTIONS: Check for Tests or daily logs for each period
+        const enrichedPeriods = await Promise.all(dayData.periods.map(async (period) => {
+            const periodObj = period.toObject ? period.toObject() : period;
+            
+            // 1. Look for a Test in 'termassessments'
+            const testRecord = await mongoose.connection.db.collection('termassessments').findOne({
+                standard: standard,
+                division: division,
+                lecNo: period.periodNumber?.toString(),
+                date: { $regex: date.split('T')[0] } // Matches 'yyyy-MM-dd'
+            });
 
-        if (!dayData || !dayData.periods) {
-            return res.status(200).json([]);
-        }
+            // 2. Look for a normal log in 'assessments'
+            const logRecord = await mongoose.connection.db.collection('assessments').findOne({
+                standard: standard,
+                division: division,
+                date: { $regex: date.split('T')[0] },
+                subjectCovered: period.subject
+            });
 
-        res.status(200).json(dayData.periods);
+            return {
+                ...periodObj,
+                isTest: !!testRecord, // Turns BLUE if test found
+                hasLog: !!logRecord,  // Stays WHITE if log found
+                assessmentId: testRecord ? testRecord._id : null
+            };
+        }));
 
+        res.status(200).json(enrichedPeriods);
     } catch (err) {
-        console.error("Fetch Error:", err);
         res.status(500).json([]);
     }
 });
+
+
 
 // ✅ NEW: Get all lectures of a teacher for a given date
 router.get('/teacher/:teacherId/:date', async (req, res) => {
