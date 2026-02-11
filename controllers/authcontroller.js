@@ -401,21 +401,62 @@ exports.getTermAssessments = async (req, res) => {
 };
 
 // Create a new test record
+// exports.createTestRecord = async (req, res) => {
+//   try {
+//     const db = mongoose.connection.db;
+//     const newTest = {
+//       ...req.body,
+//       staffid: new mongoose.Types.ObjectId(req.user.userId),
+//       createdAt: new Date(),
+//       studentData: [] // Initialize empty marks array
+//     };
+//     await db.collection('termassessments').insertOne(newTest);
+//     res.status(201).json({ success: true, message: "Test created successfully" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+// Create a new test record with automatic student list fetching
 exports.createTestRecord = async (req, res) => {
   try {
+    const { standard, division } = req.body;
     const db = mongoose.connection.db;
+
+    // 1. Fetch all students belonging to this specific Standard and Division
+    const studentsInClass = await db.collection('students').find({ 
+      standard: standard, 
+      division: division 
+    }).toArray();
+
+    // 2. Map student data to the format needed for marks entry
+    // We store rollNo and name, leaving marks empty for the teacher to fill later
+    const initialStudentData = studentsInClass.map(student => ({
+      rollNo: student.rollno || student.rollNo,
+      name: `${student.firstname} ${student.lastname}`,
+      marks: "" // Initializing marks as empty string
+    }));
+
+    // 3. Create the new Test document with the fetched student list
     const newTest = {
       ...req.body,
       staffid: new mongoose.Types.ObjectId(req.user.userId),
       createdAt: new Date(),
-      studentData: [] // Initialize empty marks array
+      studentData: initialStudentData // ✅ Now populated with actual students
     };
+
     await db.collection('termassessments').insertOne(newTest);
-    res.status(201).json({ success: true, message: "Test created successfully" });
+    
+    res.status(201).json({ 
+      success: true, 
+      message: "Test created successfully with student list" 
+    });
   } catch (error) {
+    console.error("Create Test Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // Update student marks for a specific test
 exports.updateTestMarks = async (req, res) => {
@@ -469,6 +510,23 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
       divisions: Array.from(divisionsSet).sort(),
       subjects: Array.from(subjectsSet).sort(),
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Add this to controllers/authcontroller.js
+exports.getStudentsByClass = async (req, res) => {
+  try {
+    const { standard, division } = req.params;
+    const db = mongoose.connection.db;
+
+    const students = await db.collection('students').find({ 
+      standard: standard, 
+      division: division 
+    }).sort({ rollno: 1 }).toArray();
+
+    res.status(200).json(students);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

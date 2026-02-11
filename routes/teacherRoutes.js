@@ -38,4 +38,6 @@ router.post("/tests/create", authMiddleware, authcontroller.createTestRecord);
 router.put("/tests/update-marks/:testId", authMiddleware, authcontroller.updateTestMarks);
 // ✅ Fixes the "object Undefined" error by using the correct variable name
 router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
+// Add this line to your routes
+router.get("/students/:standard/:division", authMiddleware, authcontroller.getStudentsByClass);
 module.exports = router;
