@@ -417,42 +417,33 @@ exports.getTermAssessments = async (req, res) => {
 //   }
 // };
 
-// Create a new test record with automatic student list fetching
 exports.createTestRecord = async (req, res) => {
   try {
     const { standard, division } = req.body;
     const db = mongoose.connection.db;
 
-    // 1. Fetch all students belonging to this specific Standard and Division
+    // Fetch students using the correct nested path
     const studentsInClass = await db.collection('students').find({ 
-      standard: standard, 
-      division: division 
+      "admission.admissionstd": standard, 
+      "admission.admissiondivision": division 
     }).toArray();
 
-    // 2. Map student data to the format needed for marks entry
-    // We store rollNo and name, leaving marks empty for the teacher to fill later
     const initialStudentData = studentsInClass.map(student => ({
-      rollNo: student.rollno || student.rollNo,
+      rollNo: student.admission?.grno || "N/A", // Using GR No as Roll No
       name: `${student.firstname} ${student.lastname}`,
-      marks: "" // Initializing marks as empty string
+      marks: "" 
     }));
 
-    // 3. Create the new Test document with the fetched student list
     const newTest = {
       ...req.body,
       staffid: new mongoose.Types.ObjectId(req.user.userId),
       createdAt: new Date(),
-      studentData: initialStudentData // ✅ Now populated with actual students
+      studentData: initialStudentData 
     };
 
     await db.collection('termassessments').insertOne(newTest);
-    
-    res.status(201).json({ 
-      success: true, 
-      message: "Test created successfully with student list" 
-    });
+    res.status(201).json({ success: true, message: "Test created with students" });
   } catch (error) {
-    console.error("Create Test Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -515,16 +506,17 @@ exports.getTeacherAssignmentOptions = async (req, res) => {
   }
 };
 
-// ✅ Add this to controllers/authcontroller.js
+// ✅ Corrected to match your nested Student schema
 exports.getStudentsByClass = async (req, res) => {
   try {
     const { standard, division } = req.params;
     const db = mongoose.connection.db;
 
+    // We must query nested fields: admission.admissionstd and admission.admissiondivision
     const students = await db.collection('students').find({ 
-      standard: standard, 
-      division: division 
-    }).sort({ rollno: 1 }).toArray();
+      "admission.admissionstd": standard, 
+      "admission.admissiondivision": division 
+    }).sort({ "admission.grno": 1 }).toArray(); // Sorting by GR No or Roll No
 
     res.status(200).json(students);
   } catch (error) {
