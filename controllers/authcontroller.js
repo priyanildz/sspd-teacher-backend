@@ -448,7 +448,6 @@ exports.createTestRecord = async (req, res) => {
   }
 };
 
-
 // Update student marks for a specific test
 exports.updateTestMarks = async (req, res) => {
   try {
@@ -519,6 +518,43 @@ exports.getStudentsByClass = async (req, res) => {
     }).sort({ "admission.grno": 1 }).toArray(); // Sorting by GR No or Roll No
 
     res.status(200).json(students);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Fetch fee structure for a standard
+exports.getFeeStructure = async (req, res) => {
+  try {
+    const { standard } = req.params;
+    const db = mongoose.connection.db;
+    const structure = await db.collection('fees').findOne({ standard: standard });
+    res.status(200).json({ success: true, structure });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ Fetch all students with their specific paid fees
+exports.getStudentFeesStatus = async (req, res) => {
+  try {
+    const { standard, division } = req.params;
+    const db = mongoose.connection.db;
+    
+    // Fetch students in the class
+    const students = await db.collection('students').find({ 
+      "admission.admissionstd": standard, 
+      "admission.admissiondivision": division 
+    }).toArray();
+
+    // Map them to include their paid amount (this assumes you store paid fees in student record or a separate collection)
+    const feeStatus = students.map(s => ({
+      name: `${s.firstname} ${s.lastname}`,
+      rollNo: s.admission?.grno || "N/A",
+      paidAmount: s.feesPaid || 0 // Replace with your actual field name
+    }));
+
+    res.status(200).json({ success: true, students: feeStatus });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

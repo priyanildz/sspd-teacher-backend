@@ -40,4 +40,7 @@ router.put("/tests/update-marks/:testId", authMiddleware, authcontroller.updateT
 router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAssignmentOptions);
 // Add this line to your routes
 router.get("/students/:standard/:division", authMiddleware, authcontroller.getStudentsByClass);
+router.get("/fees/structure/:standard", authMiddleware, authcontroller.getFeeStructure);
+router.get("/fees/status/:standard/:division", authMiddleware, authcontroller.getStudentFeesStatus);
+
 module.exports = router;
