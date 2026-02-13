@@ -535,23 +535,45 @@ exports.getFeeStructure = async (req, res) => {
   }
 };
 
-// ✅ Fetch all students with their specific paid fees
 exports.getStudentFeesStatus = async (req, res) => {
   try {
     const { standard, division } = req.params;
     const db = mongoose.connection.db;
-    
-    // Fetch students in the class
+
+    // 1. Get the total required fees for this standard (e.g., 4500)
+    const feeStructure = await db.collection('fees').findOne({ standard: standard });
+    const targetTotal = feeStructure ? feeStructure.total : 0;
+
+    // 2. Fetch all students in the class
     const students = await db.collection('students').find({ 
       "admission.admissionstd": standard, 
       "admission.admissiondivision": division 
     }).toArray();
 
-    // Map them to include their paid amount (this assumes you store paid fees in student record or a separate collection)
-    const feeStatus = students.map(s => ({
-      name: `${s.firstname} ${s.lastname}`,
-      rollNo: s.admission?.grno || "N/A",
-      paidAmount: s.feesPaid || 0 // Replace with your actual field name
+    // 3. For each student, find their total paid amount from 'paymententries'
+    const feeStatus = await Promise.all(students.map(async (s) => {
+      const name = `${s.firstname} ${s.lastname}`;
+      
+      // Look up payment entry for this specific student
+      const paymentRecord = await db.collection('paymententries').findOne({ 
+        name: name, 
+        std: standard, 
+        div: division 
+      });
+
+      // Sum up all installments paid
+      let totalPaid = 0;
+      if (paymentRecord && paymentRecord.installments) {
+        totalPaid = paymentRecord.installments.reduce((sum, inst) => sum + inst.amount, 0);
+      }
+
+      return {
+        name: name,
+        rollNo: s.admission?.grno || "N/A",
+        paidAmount: totalPaid,
+        totalRequired: targetTotal,
+        status: totalPaid >= targetTotal ? "Paid" : "Unpaid"
+      };
     }));
 
     res.status(200).json({ success: true, students: feeStatus });
