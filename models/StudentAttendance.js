@@ -1,16 +1,17 @@
 // models/StudentAttendance.js
 const mongoose = require('mongoose');
 
+// models/StudentAttendance.js
 const studentAttendanceSchema = new mongoose.Schema({
   date: { type: String, required: true },
   std: { type: String, required: true },
   div: { type: String, required: true },
   students: [
     {
-      // Remove required: true to prevent 500 errors when studentid is null
-      studentid: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, 
+      // Changed from ObjectId to Mixed to support both 'S-2025-001' strings and ObjectIds
+      studentid: { type: mongoose.Schema.Types.Mixed, required: false }, 
       studentname: { type: String, required: true },
-      remark: { type: String, required: true } // "P" or "A"
+      remark: { type: String, required: true } 
     }
   ]
 }, { timestamps: true });
