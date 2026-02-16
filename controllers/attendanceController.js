@@ -17,9 +17,29 @@ exports.getAttendanceByDate = async (req, res) => {
 };
 
 // Existing addAttendance logic remains same...
+// exports.addAttendance = async (req, res) => {
+//   try {
+//     const { date, std, div, students } = req.body;
+//     let record = await StudentAttendance.findOneAndUpdate(
+//       { date, std, div },
+//       { students },
+//       { new: true, upsert: true }
+//     );
+//     res.status(201).json({ success: true, data: record });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
+
+// attendanceController.js
 exports.addAttendance = async (req, res) => {
   try {
     const { date, std, div, students } = req.body;
+    
+    // Debug log to see exactly what Flutter is sending
+    console.log("Incoming Attendance Data:", JSON.stringify(req.body, null, 2));
+
     let record = await StudentAttendance.findOneAndUpdate(
       { date, std, div },
       { students },
@@ -27,6 +47,7 @@ exports.addAttendance = async (req, res) => {
     );
     res.status(201).json({ success: true, data: record });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Backend Error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
