@@ -3,17 +3,25 @@ const StudentAttendance = require('../models/StudentAttendance');
 exports.addAttendance = async (req, res) => {
   try {
     const { date, std, div, students } = req.body;
-    let record = await StudentAttendance.findOne({ date, std, div });
+    
+    // This finds existing attendance for that day/class or creates a new one
+    let record = await StudentAttendance.findOneAndUpdate(
+      { date, std, div },
+      { students },
+      { new: true, upsert: true }
+    );
 
-    if (record) {
-      record.students = students;
-      await record.save();
-    } else {
-      record = new StudentAttendance({ date, std, div, students });
-      await record.save();
-    }
-    res.status(201).json({ message: "Attendance saved", data: record });
+    res.status(201).json({ 
+      success: true, 
+      message: "Attendance saved successfully", 
+      data: record 
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Attendance Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal Server Error", 
+      error: error.message 
+    });
   }
 };
