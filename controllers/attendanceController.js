@@ -4,7 +4,7 @@ exports.addAttendance = async (req, res) => {
   try {
     const { date, std, div, students } = req.body;
     
-    // This finds existing attendance for that day/class or creates a new one
+    // Find the record in the original collection and update it, or create if it doesn't exist
     let record = await StudentAttendance.findOneAndUpdate(
       { date, std, div },
       { students },
@@ -13,14 +13,14 @@ exports.addAttendance = async (req, res) => {
 
     res.status(201).json({ 
       success: true, 
-      message: "Attendance saved successfully", 
+      message: "Attendance updated in original collection", 
       data: record 
     });
   } catch (error) {
     console.error("Attendance Error:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Internal Server Error", 
+      message: "Server Error", 
       error: error.message 
     });
   }
