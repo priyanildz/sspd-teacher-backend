@@ -1,3 +1,4 @@
+// models/StudentAttendance.js
 const mongoose = require('mongoose');
 
 const studentAttendanceSchema = new mongoose.Schema({
@@ -6,7 +7,8 @@ const studentAttendanceSchema = new mongoose.Schema({
   div: { type: String, required: true },
   students: [
     {
-      studentid: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      // Remove required: true to prevent 500 errors when studentid is null
+      studentid: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, 
       studentname: { type: String, required: true },
       remark: { type: String, required: true } // "P" or "A"
     }
