@@ -4,10 +4,11 @@ const StudentAttendance = require('../models/StudentAttendance');
 exports.getAttendanceByDate = async (req, res) => {
   try {
     const { std, div, date } = req.params;
+    // Explicitly searching for the class and date
     const record = await StudentAttendance.findOne({ std, div, date });
     
     if (!record) {
-      return res.status(404).json({ message: "No record found" });
+      return res.status(404).json({ message: "No record found for this date" });
     }
     res.status(200).json(record);
   } catch (error) {
