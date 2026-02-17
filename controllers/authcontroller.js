@@ -568,6 +568,7 @@ exports.getStudentFeesStatus = async (req, res) => {
       }
 
       return {
+        studentid: s._id,
         name: name,
         rollNo: s.admission?.grno || "N/A",
         paidAmount: totalPaid,
