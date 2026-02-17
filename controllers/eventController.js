@@ -1,5 +1,4 @@
-// controllers/eventController.js
-const mongoose = require('mongoose'); // ✅ FIX: Prevents ReferenceError: mongoose is not defined
+const mongoose = require('mongoose'); // ✅ FIX: Added missing import
 const Event = require('../models/Event');
 
 exports.getEvents = async (req, res) => {
@@ -11,17 +10,17 @@ exports.getEvents = async (req, res) => {
   }
 };
 
-exports.getEventDetails = async (req, res) => { // ✅ This name MUST match the route
+exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
-    // .populate('participants') swaps student IDs for real student objects
+    // ✅ Use populate to get real student names from the participants array
     const event = await Event.findOne({ eventname: eventName }).populate('participants');
     
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     
     res.status(200).json({ 
       success: true, 
-      participants: event.participants, // This returns real student data
+      participants: event.participants, // Now contains full student objects
       eventDetails: event 
     });
   } catch (error) {

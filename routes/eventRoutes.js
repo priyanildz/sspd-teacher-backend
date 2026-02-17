@@ -46,15 +46,12 @@
 
 
 
-
-// routes/eventRoutes.js
-// routes/eventRoutes.js
 const express = require('express');
 const router = express.Router();
 const eventController = require('../controllers/eventController');
 
 router.get('/', eventController.getEvents);
-// Change getEventParticipants to getEventDetails to match your exports
+// FIX: Match the function name in your controller
 router.get('/details/:eventName', eventController.getEventDetails); 
 
 module.exports = router;
