@@ -52,24 +52,20 @@ exports.addAttendance = async (req, res) => {
   }
 };
 
+// attendanceController.js
 exports.getStudentMonthlySummary = async (req, res) => {
   try {
     const { studentId } = req.params;
     const db = mongoose.connection.db;
 
-    // Aggregate attendance records for the specific student
     const summary = await db.collection('studentattendences').aggregate([
       { $unwind: "$students" },
       { $match: { "students.studentid": studentId } },
       {
         $group: {
-          _id: { $substr: ["$date", 0, 7] }, // Groups by YYYY-MM
-          present: {
-            $sum: { $cond: [{ $eq: ["$students.remark", "P"] }, 1, 0] }
-          },
-          absent: {
-            $sum: { $cond: [{ $eq: ["$students.remark", "A"] }, 1, 0] }
-          },
+          _id: { $substr: ["$date", 0, 7] }, // Groups by "YYYY-MM"
+          present: { $sum: { $cond: [{ $eq: ["$students.remark", "P"] }, 1, 0] } },
+          absent: { $sum: { $cond: [{ $eq: ["$students.remark", "A"] }, 1, 0] } },
           totalDays: { $sum: 1 }
         }
       },
