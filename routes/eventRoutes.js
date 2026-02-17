@@ -48,15 +48,13 @@
 
 
 // routes/eventRoutes.js
+// routes/eventRoutes.js
 const express = require('express');
 const router = express.Router();
 const eventController = require('../controllers/eventController');
 
-// Matches: /api/events
 router.get('/', eventController.getEvents);
-
-// Matches: /api/events/details/:eventName
-// FIX: Changed from getEventParticipants to getEventDetails to match your controller
-router.get('/details/:eventName', eventController.getEventDetails);
+// Change getEventParticipants to getEventDetails to match your exports
+router.get('/details/:eventName', eventController.getEventDetails); 
 
 module.exports = router;
