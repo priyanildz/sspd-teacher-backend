@@ -53,17 +53,14 @@ exports.addAttendance = async (req, res) => {
 };
 
 
-
 exports.getStudentMonthlySummary = async (req, res) => {
   try {
     const { studentId } = req.params;
     
-    // Convert to ObjectId for matching if necessary
-    let sId;
-    try {
-        sId = new mongoose.Types.ObjectId(studentId);
-    } catch (e) {
-        sId = studentId; // Fallback to string if studentId isn't a valid hex string
+    // Create an ObjectId if the string is valid, otherwise use the string
+    let queryId = studentId;
+    if (mongoose.Types.ObjectId.isValid(studentId)) {
+        queryId = new mongoose.Types.ObjectId(studentId);
     }
 
     const db = mongoose.connection.db;
@@ -72,8 +69,8 @@ exports.getStudentMonthlySummary = async (req, res) => {
       { 
         $match: { 
           $or: [
-            { "students.studentid": studentId }, // Check as String
-            { "students.studentid": sId }        // Check as ObjectId
+            { "students.studentid": studentId }, // Match if stored as String
+            { "students.studentid": queryId }   // Match if stored as ObjectId
           ]
         } 
       },
@@ -85,11 +82,12 @@ exports.getStudentMonthlySummary = async (req, res) => {
           totalDays: { $sum: 1 }
         }
       },
-      { $sort: { "_id": -1 } } // Sort by most recent month first
+      { $sort: { "_id": -1 } } // Show most recent month first
     ]).toArray();
 
     res.status(200).json({ success: true, summary });
   } catch (error) {
+    console.error("Aggregation Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
