@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
-const StaffAttendance = require("../models/StaffAttendance"); 
+const StaffAttendance = require("../models/StaffAttendance");
 
 exports.register = async (req, res) => {
   const { name, username, password, dob, emailaddress, contact, role, standard, division } = req.body;
@@ -182,15 +182,17 @@ exports.login = async (req, res) => {
     }
 
     // ✅ Access the classrooms collection directly to get assignment and student count
-    const classroom = await mongoose.connection.db.collection('classrooms').findOne({ 
-      staffid: user._id 
+    const classroom = await mongoose.connection.db.collection('classrooms').findOne({
+      staffid: user._id
     });
 
     // Generate JWT Token
     const token = jwt.sign(
-      { userId: user._id, 
+      {
+        userId: user._id,
         username: user.staffid,
-        role: user.role },
+        role: user.role
+      },
       process.env.JWT_SECRET || "defaultsecret",
       { expiresIn: "1h" }
     );
@@ -267,8 +269,8 @@ exports.getMySubjects = async (req, res) => {
       mongoose.model("SubjectAllocation", new mongoose.Schema({}, { strict: false }), "subjectallocations");
     }
 
-    const allocation = await mongoose.model("SubjectAllocation").findOne({ 
-      teacher: new mongoose.Types.ObjectId(req.user.userId) 
+    const allocation = await mongoose.model("SubjectAllocation").findOne({
+      teacher: new mongoose.Types.ObjectId(req.user.userId)
     });
 
     if (!allocation) return res.status(200).json({ success: true, subjects: [] });
@@ -287,7 +289,7 @@ exports.getMySubjects = async (req, res) => {
           formattedSubjects.push({
             subject_name: subject,
             standard: std,
-            division: String(finalDiv).trim() 
+            division: String(finalDiv).trim()
           });
         });
       } else {
@@ -310,8 +312,8 @@ exports.getMySubjects = async (req, res) => {
 exports.getStaffAttendance = async (req, res) => {
   try {
     // req.user.username contains the STF-ID (e.g., "STF-PR-1-8309") from your login logic
-    const attendance = await StaffAttendance.find({ 
-      staffid: req.user.username 
+    const attendance = await StaffAttendance.find({
+      staffid: req.user.username
     }).sort({ date: 1 });
 
     res.status(200).json({ success: true, attendance });
@@ -325,8 +327,8 @@ exports.getStaffAttendance = async (req, res) => {
 exports.getExamsByStandard = async (req, res) => {
   try {
     const { standard } = req.params;
-    const exams = await mongoose.connection.db.collection('exams').find({ 
-      standard: standard 
+    const exams = await mongoose.connection.db.collection('exams').find({
+      standard: standard
     }).toArray();
 
     // Map the results to ensure 'time' always contains 'time_display'
@@ -335,7 +337,7 @@ exports.getExamsByStandard = async (req, res) => {
       timetable: exam.timetable.map(slot => ({
         ...slot,
         // ✅ Explicitly map time_display to time for the frontend
-        time: slot.time_display || slot.time || 'N/A' 
+        time: slot.time_display || slot.time || 'N/A'
       }))
     }));
 
@@ -349,7 +351,7 @@ exports.getExamsByStandard = async (req, res) => {
 // exports.getMyPaperEvaluations = async (req, res) => {
 //   try {
 //     const teacherId = req.user.userId; // Extracted from JWT token
-    
+
 //     // Query the 'paperevaluations' collection for this specific teacher
 //     const evaluations = await mongoose.connection.db.collection('paperevaluations').find({ 
 //       assignedteacher: new mongoose.Types.ObjectId(teacherId)
@@ -366,7 +368,7 @@ exports.getExamsByStandard = async (req, res) => {
 exports.getMyPaperEvaluations = async (req, res) => {
   try {
     const teacherId = req.user.userId;
-    const evaluations = await mongoose.connection.db.collection('paperevaluations').find({ 
+    const evaluations = await mongoose.connection.db.collection('paperevaluations').find({
       assignedteacher: new mongoose.Types.ObjectId(teacherId)
     }).toArray();
     res.status(200).json({ success: true, evaluations });
@@ -379,7 +381,7 @@ exports.getMyPaperEvaluations = async (req, res) => {
 exports.getMyRecheckings = async (req, res) => {
   try {
     const teacherId = req.user.userId;
-    const recheckings = await mongoose.connection.db.collection('recheckings').find({ 
+    const recheckings = await mongoose.connection.db.collection('recheckings').find({
       assignedTo: new mongoose.Types.ObjectId(teacherId)
     }).toArray();
     res.status(200).json({ success: true, recheckings });
@@ -423,22 +425,22 @@ exports.createTestRecord = async (req, res) => {
     const db = mongoose.connection.db;
 
     // Fetch students using the correct nested path
-    const studentsInClass = await db.collection('students').find({ 
-      "admission.admissionstd": standard, 
-      "admission.admissiondivision": division 
+    const studentsInClass = await db.collection('students').find({
+      "admission.admissionstd": standard,
+      "admission.admissiondivision": division
     }).toArray();
 
     const initialStudentData = studentsInClass.map(student => ({
       rollNo: student.admission?.grno || "N/A", // Using GR No as Roll No
       name: `${student.firstname} ${student.lastname}`,
-      marks: "" 
+      marks: ""
     }));
 
     const newTest = {
       ...req.body,
       staffid: new mongoose.Types.ObjectId(req.user.userId),
       createdAt: new Date(),
-      studentData: initialStudentData 
+      studentData: initialStudentData
     };
 
     await db.collection('termassessments').insertOne(newTest);
@@ -512,9 +514,9 @@ exports.getStudentsByClass = async (req, res) => {
     const db = mongoose.connection.db;
 
     // We must query nested fields: admission.admissionstd and admission.admissiondivision
-    const students = await db.collection('students').find({ 
-      "admission.admissionstd": standard, 
-      "admission.admissiondivision": division 
+    const students = await db.collection('students').find({
+      "admission.admissionstd": standard,
+      "admission.admissiondivision": division
     }).sort({ "admission.grno": 1 }).toArray(); // Sorting by GR No or Roll No
 
     res.status(200).json(students);
@@ -545,20 +547,20 @@ exports.getStudentFeesStatus = async (req, res) => {
     const targetTotal = feeStructure ? feeStructure.total : 0;
 
     // 2. Fetch all students in the class
-    const students = await db.collection('students').find({ 
-      "admission.admissionstd": standard, 
-      "admission.admissiondivision": division 
+    const students = await db.collection('students').find({
+      "admission.admissionstd": standard,
+      "admission.admissiondivision": division
     }).toArray();
 
     // 3. For each student, find their total paid amount from 'paymententries'
     const feeStatus = await Promise.all(students.map(async (s) => {
       const name = `${s.firstname} ${s.lastname}`;
-      
+
       // Look up payment entry for this specific student
-      const paymentRecord = await db.collection('paymententries').findOne({ 
-        name: name, 
-        std: standard, 
-        div: division 
+      const paymentRecord = await db.collection('paymententries').findOne({
+        name: name,
+        std: standard,
+        div: division
       });
 
       // Sum up all installments paid
@@ -567,17 +569,27 @@ exports.getStudentFeesStatus = async (req, res) => {
         totalPaid = paymentRecord.installments.reduce((sum, inst) => sum + inst.amount, 0);
       }
 
+      //   return {
+      //     name: name,
+      //     rollNo: s.admission?.grno || "N/A",
+      //     paidAmount: totalPaid,
+      //     totalRequired: targetTotal,
+      //     status: totalPaid >= targetTotal ? "Paid" : "Unpaid"
+      //   };
+      // }));
+
+
       return {
+        studentid: s._id, // Add this line to include the MongoDB Object ID
         name: name,
         rollNo: s.admission?.grno || "N/A",
         paidAmount: totalPaid,
         totalRequired: targetTotal,
         status: totalPaid >= targetTotal ? "Paid" : "Unpaid"
       };
-    }));
 
-    res.status(200).json({ success: true, students: feeStatus });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+      res.status(200).json({ success: true, students: feeStatus });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
