@@ -53,6 +53,7 @@ exports.addAttendance = async (req, res) => {
 };
 
 // attendanceController.js
+// attendanceController.js
 exports.getStudentMonthlySummary = async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -60,10 +61,10 @@ exports.getStudentMonthlySummary = async (req, res) => {
 
     const summary = await db.collection('studentattendences').aggregate([
       { $unwind: "$students" },
-      { $match: { "students.studentid": studentId } },
+      { $match: { "students.studentid": studentId } }, // Matches "6957cdd..."
       {
         $group: {
-          _id: { $substr: ["$date", 0, 7] }, // Groups by "YYYY-MM"
+          _id: { $substr: ["$date", 0, 7] }, // "2026-02"
           present: { $sum: { $cond: [{ $eq: ["$students.remark", "P"] }, 1, 0] } },
           absent: { $sum: { $cond: [{ $eq: ["$students.remark", "A"] }, 1, 0] } },
           totalDays: { $sum: 1 }
