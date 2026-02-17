@@ -1,4 +1,5 @@
 const Event = require('../models/Event');
+const mongoose = require('mongoose');
 
 // Fetch all events with basic info
 exports.getEvents = async (req, res) => {
