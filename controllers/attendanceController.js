@@ -56,38 +56,38 @@ exports.addAttendance = async (req, res) => {
 exports.getStudentMonthlySummary = async (req, res) => {
   try {
     const { studentId } = req.params;
-    
-    // Create an ObjectId if the string is valid, otherwise use the string
-    let queryId = studentId;
-    if (mongoose.Types.ObjectId.isValid(studentId)) {
-        queryId = new mongoose.Types.ObjectId(studentId);
-    }
-
     const db = mongoose.connection.db;
+
     const summary = await db.collection('studentattendences').aggregate([
+      // 1. Flatten the students array so we can look at each record
       { $unwind: "$students" },
+      
+      // 2. Match the specific studentId as either a String or an ObjectId
       { 
         $match: { 
           $or: [
-            { "students.studentid": studentId }, // Match if stored as String
-            { "students.studentid": queryId }   // Match if stored as ObjectId
+            { "students.studentid": studentId },
+            { "students.studentid": new mongoose.Types.ObjectId(studentId) }
           ]
         } 
       },
+      
+      // 3. Group by the month (from the YYYY-MM-DD string)
       {
         $group: {
-          _id: { $substr: ["$date", 0, 7] }, // Groups by YYYY-MM
+          _id: { $substr: ["$date", 0, 7] }, // Gets "2026-02"
           present: { $sum: { $cond: [{ $eq: ["$students.remark", "P"] }, 1, 0] } },
           absent: { $sum: { $cond: [{ $eq: ["$students.remark", "A"] }, 1, 0] } },
           totalDays: { $sum: 1 }
         }
       },
-      { $sort: { "_id": -1 } } // Show most recent month first
+      
+      // 4. Sort by most recent month
+      { $sort: { "_id": -1 } }
     ]).toArray();
 
     res.status(200).json({ success: true, summary });
   } catch (error) {
-    console.error("Aggregation Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
