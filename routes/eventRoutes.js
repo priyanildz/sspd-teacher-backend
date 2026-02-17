@@ -1,44 +1,54 @@
-const express = require("express");
-const Event = require("../models/Event");
+// const express = require("express");
+// const Event = require("../models/Event");
 
-const router = express.Router();
+// const router = express.Router();
 
-// ✅ Create a new event (Emit to WebSocket)
-router.post("/add", async (req, res) => {
-  try {
-    const { name, date, venue, managedBy } = req.body;
+// // ✅ Create a new event (Emit to WebSocket)
+// router.post("/add", async (req, res) => {
+//   try {
+//     const { name, date, venue, managedBy } = req.body;
 
-    if (!managedBy) {
-      return res.status(400).json({ success: false, message: "Managed By is required" });
-    }
+//     if (!managedBy) {
+//       return res.status(400).json({ success: false, message: "Managed By is required" });
+//     }
 
-    const newEvent = new Event({ name, date, venue, managedBy });
-    await newEvent.save();
+//     const newEvent = new Event({ name, date, venue, managedBy });
+//     await newEvent.save();
 
-    // ✅ Emit event using `req.io`
-    req.io.emit("new_event", { message: `New Event: ${newEvent.name}` });
-console.log("Event emitted:", newEvent.name); // ✅ Add this log
+//     // ✅ Emit event using `req.io`
+//     req.io.emit("new_event", { message: `New Event: ${newEvent.name}` });
+// console.log("Event emitted:", newEvent.name); // ✅ Add this log
 
     
 
-    res.status(201).json({ success: true, message: "Event added successfully" });
-  } catch (error) {
-    console.error("Event Creation Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-  console.log("req.io:", req.io); // Debugging line to check if io is available
+//     res.status(201).json({ success: true, message: "Event added successfully" });
+//   } catch (error) {
+//     console.error("Event Creation Error:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+//   console.log("req.io:", req.io); // Debugging line to check if io is available
 
-});
+// });
 
-// ✅ Get all events
-router.get("/", async (req, res) => {
-  try {
-    const events = await Event.find();
-    res.json({ success: true, events });
-  } catch (error) {
-    console.error("Fetch Events Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+// // ✅ Get all events
+// router.get("/", async (req, res) => {
+//   try {
+//     const events = await Event.find();
+//     res.json({ success: true, events });
+//   } catch (error) {
+//     console.error("Fetch Events Error:", error);
+//     res.status(500).json({ success: false, message: "Server error" });
+//   }
+// });
+
+// module.exports = router;
+
+
+const express = require('express');
+const router = express.Router();
+const eventController = require('../controllers/eventController');
+
+router.get('/', eventController.getEvents);
+router.get('/:id/participants', eventController.getEventParticipants);
 
 module.exports = router;
