@@ -56,38 +56,49 @@ exports.addAttendance = async (req, res) => {
 exports.getStudentMonthlySummary = async (req, res) => {
   try {
     const { studentId } = req.params;
+
+    // 1. Validate the studentId before querying
+    if (!studentId || studentId === "null" || studentId === "undefined") {
+      return res.status(400).json({ success: false, message: "Valid Student ID is required" });
+    }
+
     const db = mongoose.connection.db;
+    
+    // 2. Build a flexible query to handle both String and ObjectId
+    let queryId = studentId;
+    try {
+        if (mongoose.Types.ObjectId.isValid(studentId)) {
+            queryId = new mongoose.Types.ObjectId(studentId);
+        }
+    } catch (e) {
+        console.log("Not an ObjectId, treating as string.");
+    }
 
     const summary = await db.collection('studentattendences').aggregate([
-      // 1. Flatten the students array so we can look at each record
       { $unwind: "$students" },
-      
-      // 2. Match the specific studentId as either a String or an ObjectId
       { 
         $match: { 
           $or: [
             { "students.studentid": studentId },
-            { "students.studentid": new mongoose.Types.ObjectId(studentId) }
+            { "students.studentid": queryId }
           ]
         } 
       },
-      
-      // 3. Group by the month (from the YYYY-MM-DD string)
       {
         $group: {
-          _id: { $substr: ["$date", 0, 7] }, // Gets "2026-02"
+          _id: { $substr: ["$date", 0, 7] }, // Groups by "YYYY-MM"
           present: { $sum: { $cond: [{ $eq: ["$students.remark", "P"] }, 1, 0] } },
           absent: { $sum: { $cond: [{ $eq: ["$students.remark", "A"] }, 1, 0] } },
           totalDays: { $sum: 1 }
         }
       },
-      
-      // 4. Sort by most recent month
       { $sort: { "_id": -1 } }
     ]).toArray();
 
-    res.status(200).json({ success: true, summary });
+    // 3. Always return an array, even if empty, to prevent frontend crashes
+    res.status(200).json({ success: true, summary: summary || [] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Backend Aggregation Error:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error during aggregation" });
   }
 };
