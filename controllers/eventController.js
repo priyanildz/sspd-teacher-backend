@@ -1,20 +1,29 @@
 const Event = require('../models/Event');
 
+// Fetch all events with basic info
 exports.getEvents = async (req, res) => {
   try {
-    const events = await Event.find();
+    const events = await Event.find().sort({ date: 1 });
     res.status(200).json({ success: true, events });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-exports.getEventParticipants = async (req, res) => {
+// Fetch specific event details with full student data
+exports.getEventDetails = async (req, res) => {
   try {
-    const { id } = req.params;
-    const event = await Event.findById(id).populate('participants');
+    const { eventName } = req.params;
+    // Population is key for real data
+    const event = await Event.findOne({ eventname: eventName }).populate('participants');
+    
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
-    res.status(200).json({ success: true, participants: event.participants });
+    
+    res.status(200).json({ 
+      success: true, 
+      participants: event.participants, // This is now real student data
+      eventDetails: event 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
