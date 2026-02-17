@@ -1,4 +1,5 @@
 const StudentAttendance = require('../models/StudentAttendance');
+const mongoose = require('mongoose');
 
 // Fetch attendance for a specific class and date
 exports.getAttendanceByDate = async (req, res) => {
