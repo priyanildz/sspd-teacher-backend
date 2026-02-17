@@ -57,27 +57,35 @@ exports.addAttendance = async (req, res) => {
 exports.getStudentMonthlySummary = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const db = mongoose.connection.db;
+    
+    // Convert to ObjectId for matching if necessary
+    let sId;
+    try {
+        sId = new mongoose.Types.ObjectId(studentId);
+    } catch (e) {
+        sId = studentId; // Fallback to string if studentId isn't a valid hex string
+    }
 
+    const db = mongoose.connection.db;
     const summary = await db.collection('studentattendences').aggregate([
       { $unwind: "$students" },
       { 
         $match: { 
           $or: [
-            { "students.studentid": studentId }, // Matches if stored as String
-            { "students.studentid": new mongoose.Types.ObjectId(studentId) } // Matches if stored as ObjectId
+            { "students.studentid": studentId }, // Check as String
+            { "students.studentid": sId }        // Check as ObjectId
           ]
         } 
       },
       {
         $group: {
-          _id: { $substr: ["$date", 0, 7] },
+          _id: { $substr: ["$date", 0, 7] }, // Groups by YYYY-MM
           present: { $sum: { $cond: [{ $eq: ["$students.remark", "P"] }, 1, 0] } },
           absent: { $sum: { $cond: [{ $eq: ["$students.remark", "A"] }, 1, 0] } },
           totalDays: { $sum: 1 }
         }
       },
-      { $sort: { "_id": 1 } }
+      { $sort: { "_id": -1 } } // Sort by most recent month first
     ]).toArray();
 
     res.status(200).json({ success: true, summary });
