@@ -47,7 +47,16 @@
 
 
 
-const mongoose = require('mongoose'); // Add this line!
+
+
+
+
+
+
+
+
+
+const mongoose = require('mongoose'); // Ensure this is at the very top
 
 const eventSchema = new mongoose.Schema({
   eventname: { type: String, required: true },
@@ -55,7 +64,7 @@ const eventSchema = new mongoose.Schema({
   managedby: { type: String, required: true },
   standard: { type: String, required: true },
   division: { type: String, required: true },
-  // venue: { type: String, required: true }, // Removed as requested
+  // venue field removed as requested
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }]
 }, { timestamps: true });
 
