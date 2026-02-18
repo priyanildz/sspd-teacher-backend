@@ -10,17 +10,18 @@ exports.getEvents = async (req, res) => {
   }
 };
 
+// In your backend controller
 exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
-    // ✅ Use populate to get real student names from the participants array
+    // .populate('participants') is the key to fetching the actual student records
     const event = await Event.findOne({ eventname: eventName }).populate('participants');
     
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     
     res.status(200).json({ 
       success: true, 
-      participants: event.participants, // Now contains full student objects
+      participants: event.participants, // This will now be a list of Student objects
       eventDetails: event 
     });
   } catch (error) {
