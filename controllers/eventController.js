@@ -44,14 +44,16 @@ exports.getEvents = async (req, res) => {
 exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
-    // .populate('participants') is the key to fetching the actual student records
-    const event = await Event.findOne({ eventname: eventName }).populate('participants');
+    // Populate participants to get full student objects (firstname, lastname, etc.)
+    const event = await Event.findOne({ eventname: eventName })
+      .select('-venue')
+      .populate('participants');
     
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     
     res.status(200).json({ 
       success: true, 
-      participants: event.participants, // This will now be a list of Student objects
+      participants: event.participants, 
       eventDetails: event 
     });
   } catch (error) {
