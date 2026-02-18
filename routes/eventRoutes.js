@@ -46,26 +46,12 @@
 
 
 
+const express = require('express');
+const router = express.Router();
+const eventController = require('../controllers/eventController');
 
+router.get('/', eventController.getEvents);
+// FIX: Match the function name in your controller
+router.get('/details/:eventName', eventController.getEventDetails); 
 
-
-
-
-
-
-
-
-
-const mongoose = require('mongoose'); // Ensure this is at the very top
-
-const eventSchema = new mongoose.Schema({
-  eventname: { type: String, required: true },
-  date: { type: Date, required: true },
-  managedby: { type: String, required: true },
-  standard: { type: String, required: true },
-  division: { type: String, required: true },
-  // venue field removed as requested
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }]
-}, { timestamps: true });
-
-module.exports = mongoose.model('Event', eventSchema);
+module.exports = router;
