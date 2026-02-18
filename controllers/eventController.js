@@ -31,12 +31,14 @@
 
 
 
+
+
+
 const Event = require('../models/Event');
 
 exports.getEvents = async (req, res) => {
   try {
-    // Exclude venue from the results
-    const events = await Event.find().select('-venue').sort({ date: 1 });
+    const events = await Event.find().select('-venue').sort({ date: 1 }); // Exclude venue
     res.status(200).json({ success: true, events });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -46,7 +48,7 @@ exports.getEvents = async (req, res) => {
 exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
-    // Populate turns student IDs into full student objects
+    // populate('participants') fetches full student data
     const event = await Event.findOne({ eventname: eventName })
       .select('-venue')
       .populate('participants');
