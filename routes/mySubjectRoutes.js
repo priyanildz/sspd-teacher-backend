@@ -134,54 +134,6 @@ router.post("/add-my-subjects", async (req, res) => {
 // });
 
 // ✅ Corrected GET Route in mySubjectRoutes.js
-// router.get("/", async (req, res) => {
-//     try {
-//         const { user_id } = req.query;
-
-//         if (!user_id) {
-//             return res.status(400).json({ success: false, message: "User ID is required" });
-//         }
-
-//         const allocation = await mongoose.connection.collection("subjectallocations").findOne({ 
-//             teacher: new mongoose.Types.ObjectId(user_id) 
-//         });
-
-//         if (!allocation) {
-//             return res.status(200).json({ success: true, subjects: [] });
-//         }
-
-//         const formattedSubjects = [];
-
-//         // ✅ FLATTENING LOGIC: Loop through subjects and create separate entries for each division
-//         (allocation.subjects || []).forEach((subj, index) => {
-//             const std = (allocation.standards && allocation.standards[index]) ? allocation.standards[index] : "N/A";
-//             const divisions = allocation.divisions || [];
-
-//             // Instead of joining with ", ", we push each division as a separate object
-//             divisions.forEach(div => {
-//                 formattedSubjects.push({
-//                     subject_name: subj,
-//                     standard: std,
-//                     division: div // Now returns "A", then "B", then "C", etc.
-//                 });
-//             });
-//         });
-
-//         res.status(200).json({ 
-//             success: true, 
-//             subjects: formattedSubjects 
-//         });
-
-//     } catch (error) {
-//         console.error("Error fetching subjects:", error);
-//         res.status(500).json({ success: false, message: "Internal Server Error" });
-//     }
-// });
-
-// module.exports = router;
-
-
-// ✅ Corrected GET Route in mySubjectRoutes.js
 router.get("/", async (req, res) => {
     try {
         const { user_id } = req.query;
@@ -195,34 +147,29 @@ router.get("/", async (req, res) => {
         });
 
         if (!allocation) {
-            return res.status(200).json({ success: true, subjects: [], uniqueStds: [], uniqueDivs: [] });
+            return res.status(200).json({ success: true, subjects: [] });
         }
 
         const formattedSubjects = [];
-        const uniqueStds = new Set();
-        const uniqueDivs = new Set();
 
+        // ✅ FLATTENING LOGIC: Loop through subjects and create separate entries for each division
         (allocation.subjects || []).forEach((subj, index) => {
             const std = (allocation.standards && allocation.standards[index]) ? allocation.standards[index] : "N/A";
             const divisions = allocation.divisions || [];
 
-            uniqueStds.add(std);
-
+            // Instead of joining with ", ", we push each division as a separate object
             divisions.forEach(div => {
-                uniqueDivs.add(div);
                 formattedSubjects.push({
                     subject_name: subj,
                     standard: std,
-                    division: div
+                    division: div // Now returns "A", then "B", then "C", etc.
                 });
             });
         });
 
         res.status(200).json({ 
             success: true, 
-            subjects: formattedSubjects,
-            uniqueStds: Array.from(uniqueStds),
-            uniqueDivs: Array.from(uniqueDivs)
+            subjects: formattedSubjects 
         });
 
     } catch (error) {
@@ -230,3 +177,5 @@ router.get("/", async (req, res) => {
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 });
+
+module.exports = router;
