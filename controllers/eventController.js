@@ -66,7 +66,7 @@
 
 
 const Event = require('../models/Event');
-const Student = require('../models/Student'); // ✅ MUST add this to use .populate()
+const Student = require('../models/Student'); // ✅ Added to fix 500 error during populate
 
 exports.getEvents = async (req, res) => {
   try {
@@ -80,7 +80,6 @@ exports.getEvents = async (req, res) => {
 exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
-    // populate('participants') now works because 'Student' model is registered
     const event = await Event.findOne({ eventname: eventName }).populate('participants');
     
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
