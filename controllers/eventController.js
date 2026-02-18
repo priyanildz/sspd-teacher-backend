@@ -45,19 +45,39 @@ exports.getEvents = async (req, res) => {
   }
 };
 
+// exports.getEventDetails = async (req, res) => {
+//   try {
+//     const { eventName } = req.params;
+//     // populate('participants') fetches full student data
+//     const event = await Event.findOne({ eventname: eventName })
+//       .select('-venue')
+//       .populate('participants');
+    
+//     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
+    
+//     res.status(200).json({ 
+//       success: true, 
+//       participants: event.participants, 
+//       eventDetails: event 
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+// controllers/eventController.js
 exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
-    // populate('participants') fetches full student data
-    const event = await Event.findOne({ eventname: eventName })
-      .select('-venue')
-      .populate('participants');
+    // Populate turns the Array of IDs into full Student objects
+    const event = await Event.findOne({ eventname: eventName }).populate('participants');
     
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
     
     res.status(200).json({ 
       success: true, 
-      participants: event.participants, 
+      participants: event.participants, // Now contains full student data
       eventDetails: event 
     });
   } catch (error) {
