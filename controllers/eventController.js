@@ -80,6 +80,7 @@ exports.getEvents = async (req, res) => {
 exports.getEventDetails = async (req, res) => {
   try {
     const { eventName } = req.params;
+    // population works now because the ref name matches Student.js
     const event = await Event.findOne({ eventname: eventName }).populate('participants');
     
     if (!event) return res.status(404).json({ success: false, message: "Event not found" });
