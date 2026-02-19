@@ -59,13 +59,14 @@ router.post("/save", async (req, res) => {
 });
 
 
-// syllabusRoutes.js
 router.get("/fetch", async (req, res) => {
   try {
     const { teacherId, subject, standard, semester } = req.query;
 
+    // 🔥 This is the critical line. If teacherId is just a string, 
+    // MongoDB won't find the data stored as an ObjectId.
     const progress = await mongoose.connection.collection("syllabustrackers").findOne({ 
-      teacherId: new mongoose.Types.ObjectId(teacherId), // 🔥 MUST CONVERT STRING TO OBJECTID
+      teacherId: new mongoose.Types.ObjectId(teacherId), 
       subject: subject,
       standard: standard,
       semester: semester 
@@ -76,6 +77,7 @@ router.get("/fetch", async (req, res) => {
       data: progress ? progress.progressData : {} 
     });
   } catch (error) {
+    console.error("Fetch Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
