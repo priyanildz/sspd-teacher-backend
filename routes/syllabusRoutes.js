@@ -59,3 +59,29 @@ router.post("/save", async (req, res) => {
 });
 
 
+router.get("/fetch", async (req, res) => {
+  try {
+    const { teacherId, subject, standard, semester } = req.query;
+
+    // 🔥 FIX: Prevent crash if teacherId is missing or invalid
+    if (!teacherId || !mongoose.Types.ObjectId.isValid(teacherId)) {
+      console.log("❌ Invalid or missing teacherId received:", teacherId);
+      return res.status(200).json({ success: true, data: {} }); 
+    }
+
+    const progress = await mongoose.connection.collection("syllabustrackers").findOne({ 
+      teacherId: new mongoose.Types.ObjectId(teacherId), 
+      subject, 
+      standard, 
+      semester 
+    });
+    
+    res.status(200).json({ 
+      success: true, 
+      data: progress ? progress.progressData : {} 
+    });
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
