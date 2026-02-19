@@ -135,6 +135,7 @@ const messageRoutes= require('./routes/messageRoutes')
 const teacherRoutes = require("./routes/teacherRoutes");
 const leaveRoutes = require("./routes/leaveRoutes");
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const syllabusRoutes = require("./routes/syllabusRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000; // Use process.env.PORT for Vercel
@@ -171,6 +172,7 @@ app.use("/api/teachers", teacherRoutes);
 app.use("/api/assessments", assessmentRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use('/api/teachers', attendanceRoutes);
+app.use("/api/syllabus", syllabusRoutes);
 
 io.on("connection", (socket) => {
   console.log("🔌 New client connected:", socket.id);
