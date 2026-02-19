@@ -62,14 +62,12 @@ router.post("/save", async (req, res) => {
 router.get("/fetch", async (req, res) => {
   try {
     const { teacherId, subject, standard, semester } = req.query;
-
-    // 🔥 This is the critical line. If teacherId is just a string, 
-    // MongoDB won't find the data stored as an ObjectId.
+    
     const progress = await mongoose.connection.collection("syllabustrackers").findOne({ 
       teacherId: new mongoose.Types.ObjectId(teacherId), 
-      subject: subject,
-      standard: standard,
-      semester: semester 
+      subject, 
+      standard, 
+      semester 
     });
     
     res.status(200).json({ 
