@@ -58,31 +58,4 @@ router.post("/save", async (req, res) => {
   }
 });
 
-// Get progress from syllabustrackers
-// Get progress from syllabustrackers
-router.get("/fetch", async (req, res) => {
-  try {
-    const { teacherId, subject, standard, semester } = req.query;
 
-    // Validation to prevent crash if teacherId is missing or invalid
-    if (!teacherId || !mongoose.Types.ObjectId.isValid(teacherId)) {
-        return res.status(400).json({ success: false, message: "Invalid Teacher ID" });
-    }
-
-    // 🔥 FIX: Added 'new mongoose.Types.ObjectId(teacherId)' so it matches the DB format
-    const progress = await mongoose.connection.collection("syllabustrackers").findOne({ 
-      teacherId: new mongoose.Types.ObjectId(teacherId), 
-      subject, 
-      standard, 
-      semester 
-    });
-    
-    res.status(200).json({ 
-      success: true, 
-      data: progress ? progress.progressData : {} 
-    });
-  } catch (error) {
-    console.error("Fetch Error:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
