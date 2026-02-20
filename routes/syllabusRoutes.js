@@ -63,24 +63,25 @@ router.get("/fetch", async (req, res) => {
   try {
     const { teacherId, subject, standard, semester } = req.query;
 
-    // Create a query object
-    const query = { 
-      subject, 
-      standard, 
-      semester 
+    if (!teacherId || !subject) {
+      return res.status(400).json({ success: false, message: "Missing parameters" });
+    }
+
+    // This query looks for the teacherId as either a String OR an ObjectId
+    const query = {
+      subject,
+      standard,
+      semester,
+      $or: [
+        { teacherId: teacherId },
+        { teacherId: new mongoose.Types.ObjectId(teacherId) }
+      ]
     };
 
-    // Try finding by both ObjectId and String to be safe
-    query.$or = [
-      { teacherId: teacherId },
-      { teacherId: new mongoose.Types.ObjectId(teacherId) }
-    ];
-    
     const progress = await mongoose.connection.collection("syllabustrackers").findOne(query);
     
     res.status(200).json({ 
       success: true, 
-      // Return empty object if nothing found, so Flutter doesn't crash on null
       data: progress ? progress.progressData : {} 
     });
   } catch (error) {
