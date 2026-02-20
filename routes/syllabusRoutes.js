@@ -62,16 +62,25 @@ router.post("/save", async (req, res) => {
 router.get("/fetch", async (req, res) => {
   try {
     const { teacherId, subject, standard, semester } = req.query;
-    
-    const progress = await mongoose.connection.collection("syllabustrackers").findOne({ 
-      teacherId: new mongoose.Types.ObjectId(teacherId), 
+
+    // Create a query object
+    const query = { 
       subject, 
       standard, 
       semester 
-    });
+    };
+
+    // Try finding by both ObjectId and String to be safe
+    query.$or = [
+      { teacherId: teacherId },
+      { teacherId: new mongoose.Types.ObjectId(teacherId) }
+    ];
+    
+    const progress = await mongoose.connection.collection("syllabustrackers").findOne(query);
     
     res.status(200).json({ 
       success: true, 
+      // Return empty object if nothing found, so Flutter doesn't crash on null
       data: progress ? progress.progressData : {} 
     });
   } catch (error) {
@@ -79,4 +88,6 @@ router.get("/fetch", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+
 module.exports = router;
