@@ -583,23 +583,29 @@ exports.getStudentFeesStatus = async (req, res) => {
   }
 };
 
+// controllers/authcontroller.js
+
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
     const { standard } = req.params; // This will be "1"
     const db = mongoose.connection.db;
 
-    // We search the 'subjects' collection for the document where standard is "1"
+    // 1. Search for the document where the 'standard' field is exactly "1"
+    // Assuming the collection name is 'subjects' based on your previous message
     const standardDoc = await db.collection('subjects').findOne({ standard: standard });
 
     if (!standardDoc) {
-      return res.status(404).json({ success: false, message: "Standard not found in subjects collection" });
+      return res.status(404).json({ 
+        success: false, 
+        message: `No subjects found for standard ${standard}` 
+      });
     }
 
-    // Return the array of subjects found in that document
+    // 2. Return the NESTED subjects array from the document
     res.status(200).json({
       success: true,
       standard: standardDoc.standard,
-      subjects: standardDoc.subjects || [] 
+      subjects: standardDoc.subjects // This is the array [ {name: "English"...}, {name: "Hindi"...} ]
     });
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
