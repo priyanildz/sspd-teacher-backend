@@ -590,7 +590,7 @@ exports.getMasterSubjectsByStandard = async (req, res) => {
     const db = mongoose.connection.db;
 
     // Searches the 'standards' collection for the document matching the standard ID/Name
-    const standardData = await db.collection('standards').findOne({ standard: standard });
+    const standardData = await db.collection('subjects').findOne({ standard: standard });
 
     if (!standardData) {
       return res.status(404).json({ success: false, message: "Standard not found" });
