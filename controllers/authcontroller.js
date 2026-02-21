@@ -586,30 +586,32 @@ exports.getStudentFeesStatus = async (req, res) => {
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
     const { standard } = req.params; 
-    console.log("Requested Standard:", standard); // Check Vercel logs for this
-
     const db = mongoose.connection.db;
     
-    // Explicitly target the collection. 
-    // Double check if your collection is named 'subjects' or 'standards' in MongoDB Atlas
-    const collection = db.collection('subjects'); 
+    // 1. Log for debugging
+    console.log("Looking for standard:", standard);
 
-    // Use a case-insensitive regex or ensure it's a string to avoid type issues
-    const standardDoc = await collection.findOne({ standard: String(standard) });
+    // 2. Query with a Case-Insensitive Regex and ensure it's treated as a string
+    // This handles "1" vs 1 and avoids issues with whitespace
+    const standardDoc = await db.collection('subjects').findOne({ 
+      standard: { $regex: new RegExp(`^${standard}$`, 'i') } 
+    });
 
     if (!standardDoc) {
-      console.log("No document found for standard:", standard);
       return res.status(404).json({ 
         success: false, 
-        message: `Standard ${standard} not found.` 
+        message: `No subjects found for standard: ${standard}` 
       });
     }
 
+    // 3. Return the subjects array
+    // Map it to ensure the frontend gets a clean list of names if needed
     res.status(200).json({
       success: true,
       standard: standardDoc.standard,
-      subjects: standardDoc.subjects || []
+      subjects: standardDoc.subjects // This is the array of objects from your JSON
     });
+
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
     res.status(500).json({ success: false, message: error.message });
