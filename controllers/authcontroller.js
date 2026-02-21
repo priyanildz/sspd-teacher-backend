@@ -585,27 +585,35 @@ exports.getStudentFeesStatus = async (req, res) => {
 
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
-    const { standard } = req.params; 
-    const db = mongoose.connection.db;
+    const { standard } = req.params;
     
-    // Use a case-insensitive regex to match the standard string "1"
-    // This handles potential whitespace or type mismatches
-    const standardDoc = await db.collection('subjects').findOne({ 
-      standard: { $regex: new RegExp(`^${standard.trim()}$`, 'i') } 
+    // Check if connection is ready
+    if (!mongoose.connection || !mongoose.connection.readyState) {
+      return res.status(500).json({ success: false, message: "Database not connected" });
+    }
+
+    const db = mongoose.connection.db;
+    const collection = db.collection('subjects');
+
+    // Clean the standard string (removes accidental quotes like %221%22)
+    const cleanStandard = standard.replace(/['"]+/g, '').trim();
+
+    // Search using a case-insensitive regex for exact match
+    const standardDoc = await collection.findOne({ 
+      standard: { $regex: new RegExp(`^${cleanStandard}$`, 'i') } 
     });
 
     if (!standardDoc) {
       return res.status(404).json({ 
         success: false, 
-        message: `Standard ${standard} not found.` 
+        message: `Standard ${cleanStandard} not found.` 
       });
     }
 
-    // Return the full objects so the frontend can use 'name', 'type', etc.
     res.status(200).json({
       success: true,
       standard: standardDoc.standard,
-      subjects: standardDoc.subjects || [] 
+      subjects: standardDoc.subjects || []
     });
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
