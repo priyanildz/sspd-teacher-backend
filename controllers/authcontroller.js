@@ -587,36 +587,53 @@ exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
     const { standard } = req.params;
     
-    // Check if connection is ready
-    if (!mongoose.connection || !mongoose.connection.readyState) {
-      return res.status(500).json({ success: false, message: "Database not connected" });
+    // 1. Check if Mongoose is connected
+    const connectionState = mongoose.connection.readyState;
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    if (connectionState !== 1) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Database not connected", 
+        state: connectionState 
+      });
     }
 
     const db = mongoose.connection.db;
-    const collection = db.collection('subjects');
 
-    // Clean the standard string (removes accidental quotes like %221%22)
+    // 2. DEBUG: List all collections to see if 'subjects' exists
+    const collections = await db.listCollections().toArray();
+    const collectionNames = collections.map(c => c.name);
+    console.log("Available collections:", collectionNames);
+
+    if (!collectionNames.includes('subjects')) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Collection 'subjects' not found in database",
+        availableCollections: collectionNames 
+      });
+    }
+
+    // 3. Perform the query
     const cleanStandard = standard.replace(/['"]+/g, '').trim();
-
-    // Search using a case-insensitive regex for exact match
-    const standardDoc = await collection.findOne({ 
-      standard: { $regex: new RegExp(`^${cleanStandard}$`, 'i') } 
+    const standardDoc = await db.collection('subjects').findOne({ 
+      standard: cleanStandard 
     });
 
     if (!standardDoc) {
       return res.status(404).json({ 
         success: false, 
-        message: `Standard ${cleanStandard} not found.` 
+        message: `No document found for standard: ${cleanStandard}` 
       });
     }
 
     res.status(200).json({
       success: true,
-      standard: standardDoc.standard,
-      subjects: standardDoc.subjects || []
+      count: standardDoc.subjects.length,
+      subjects: standardDoc.subjects
     });
+
   } catch (error) {
-    console.error("Fetch Subjects Error:", error);
+    console.error("Backend Diagnostic Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
