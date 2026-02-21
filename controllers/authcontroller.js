@@ -583,26 +583,26 @@ exports.getStudentFeesStatus = async (req, res) => {
   }
 };
 
-// ✅ Fetch all master subjects for a specific standard (e.g., from your JSON structure)
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
-    const { standard } = req.params;
+    const { standard } = req.params; // This will be "1"
     const db = mongoose.connection.db;
 
-    // Searches the 'standards' collection for the document matching the standard ID/Name
-    const standardData = await db.collection('subjects').findOne({ standard: standard });
+    // We search the 'subjects' collection for the document where standard is "1"
+    const standardDoc = await db.collection('subjects').findOne({ standard: standard });
 
-    if (!standardData) {
-      return res.status(404).json({ success: false, message: "Standard not found" });
+    if (!standardDoc) {
+      return res.status(404).json({ success: false, message: "Standard not found in subjects collection" });
     }
 
+    // Return the array of subjects found in that document
     res.status(200).json({
       success: true,
-      standard: standardData.standard,
-      subjects: standardData.subjects || []
+      standard: standardDoc.standard,
+      subjects: standardDoc.subjects || [] 
     });
   } catch (error) {
-    console.error("Fetch Master Subjects Error:", error);
+    console.error("Fetch Subjects Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
