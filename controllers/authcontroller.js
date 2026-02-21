@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
-const connectDB = require('../config/db');
 const jwt = require("jsonwebtoken");
 const StaffAttendance = require("../models/StaffAttendance"); 
 
@@ -586,41 +585,33 @@ exports.getStudentFeesStatus = async (req, res) => {
 
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
-    // 1. Force connection check
-    await connectDB();
+    const { standard } = req.params;
+    const cleanStandard = standard.replace(/['"]+/g, '').trim();
 
-    const db = mongoose.connection.db;
-    
-    // 2. Test: List all collection names
-    const collections = await db.listCollections().toArray();
-    const collectionNames = collections.map(c => c.name);
+    // 1. Define or Get the Model (This handles the connection wait internally)
+    const SubjectMaster = mongoose.models.SubjectMaster || mongoose.model("SubjectMaster", new mongoose.Schema({
+      standard: String,
+      subjects: Array
+    }), "subjects"); // "subjects" is the exact name of your collection in Atlas
 
-    // 3. Clean the input (handle URL encoding like %221%22)
-    const rawStandard = req.params.standard;
-    const cleanStandard = rawStandard.replace(/['"]+/g, '').trim();
+    // 2. Query using the Model
+    const standardDoc = await SubjectMaster.findOne({ standard: cleanStandard });
 
-    // 4. Try to find the document
-    const standardDoc = await db.collection('subjects').findOne({ 
-      standard: cleanStandard 
-    });
+    if (!standardDoc) {
+      return res.status(404).json({ 
+        success: false, 
+        message: `Standard ${cleanStandard} not found.` 
+      });
+    }
 
     res.status(200).json({
       success: true,
-      diagnostics: {
-        receivedStandard: rawStandard,
-        searchedStandard: cleanStandard,
-        databaseName: db.databaseName,
-        availableCollections: collectionNames,
-        foundDocument: !!standardDoc
-      },
-      subjects: standardDoc ? standardDoc.subjects : []
+      standard: standardDoc.standard,
+      subjects: standardDoc.subjects || []
     });
 
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error("Fetch Subjects Error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
