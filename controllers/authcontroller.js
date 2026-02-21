@@ -588,30 +588,25 @@ exports.getMasterSubjectsByStandard = async (req, res) => {
     const { standard } = req.params; 
     const db = mongoose.connection.db;
     
-    // 1. Log for debugging
-    console.log("Looking for standard:", standard);
-
-    // 2. Query with a Case-Insensitive Regex and ensure it's treated as a string
-    // This handles "1" vs 1 and avoids issues with whitespace
+    // Use a case-insensitive regex to match the standard string "1"
+    // This handles potential whitespace or type mismatches
     const standardDoc = await db.collection('subjects').findOne({ 
-      standard: { $regex: new RegExp(`^${standard}$`, 'i') } 
+      standard: { $regex: new RegExp(`^${standard.trim()}$`, 'i') } 
     });
 
     if (!standardDoc) {
       return res.status(404).json({ 
         success: false, 
-        message: `No subjects found for standard: ${standard}` 
+        message: `Standard ${standard} not found.` 
       });
     }
 
-    // 3. Return the subjects array
-    // Map it to ensure the frontend gets a clean list of names if needed
+    // Return the full objects so the frontend can use 'name', 'type', etc.
     res.status(200).json({
       success: true,
       standard: standardDoc.standard,
-      subjects: standardDoc.subjects // This is the array of objects from your JSON
+      subjects: standardDoc.subjects || [] 
     });
-
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
     res.status(500).json({ success: false, message: error.message });
