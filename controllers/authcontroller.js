@@ -583,29 +583,32 @@ exports.getStudentFeesStatus = async (req, res) => {
   }
 };
 
-// controllers/authcontroller.js
-
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
-    const { standard } = req.params; // This will be "1"
-    const db = mongoose.connection.db;
+    const { standard } = req.params; 
+    console.log("Requested Standard:", standard); // Check Vercel logs for this
 
-    // 1. Search for the document where the 'standard' field is exactly "1"
-    // Assuming the collection name is 'subjects' based on your previous message
-    const standardDoc = await db.collection('subjects').findOne({ standard: standard });
+    const db = mongoose.connection.db;
+    
+    // Explicitly target the collection. 
+    // Double check if your collection is named 'subjects' or 'standards' in MongoDB Atlas
+    const collection = db.collection('subjects'); 
+
+    // Use a case-insensitive regex or ensure it's a string to avoid type issues
+    const standardDoc = await collection.findOne({ standard: String(standard) });
 
     if (!standardDoc) {
+      console.log("No document found for standard:", standard);
       return res.status(404).json({ 
         success: false, 
-        message: `No subjects found for standard ${standard}` 
+        message: `Standard ${standard} not found.` 
       });
     }
 
-    // 2. Return the NESTED subjects array from the document
     res.status(200).json({
       success: true,
       standard: standardDoc.standard,
-      subjects: standardDoc.subjects // This is the array [ {name: "English"...}, {name: "Hindi"...} ]
+      subjects: standardDoc.subjects || []
     });
   } catch (error) {
     console.error("Fetch Subjects Error:", error);
