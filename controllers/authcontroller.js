@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
+const connectDB = require('../config/db');
 const jwt = require("jsonwebtoken");
 const StaffAttendance = require("../models/StaffAttendance"); 
 
