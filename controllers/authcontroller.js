@@ -586,55 +586,41 @@ exports.getStudentFeesStatus = async (req, res) => {
 
 exports.getMasterSubjectsByStandard = async (req, res) => {
   try {
-    const { standard } = req.params;
-    
-    // 1. Check if Mongoose is connected
-    const connectionState = mongoose.connection.readyState;
-    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
-    if (connectionState !== 1) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Database not connected", 
-        state: connectionState 
-      });
-    }
+    // 1. Force connection check
+    await connectDB();
 
     const db = mongoose.connection.db;
-
-    // 2. DEBUG: List all collections to see if 'subjects' exists
+    
+    // 2. Test: List all collection names
     const collections = await db.listCollections().toArray();
     const collectionNames = collections.map(c => c.name);
-    console.log("Available collections:", collectionNames);
 
-    if (!collectionNames.includes('subjects')) {
-      return res.status(500).json({ 
-        success: false, 
-        message: "Collection 'subjects' not found in database",
-        availableCollections: collectionNames 
-      });
-    }
+    // 3. Clean the input (handle URL encoding like %221%22)
+    const rawStandard = req.params.standard;
+    const cleanStandard = rawStandard.replace(/['"]+/g, '').trim();
 
-    // 3. Perform the query
-    const cleanStandard = standard.replace(/['"]+/g, '').trim();
+    // 4. Try to find the document
     const standardDoc = await db.collection('subjects').findOne({ 
       standard: cleanStandard 
     });
 
-    if (!standardDoc) {
-      return res.status(404).json({ 
-        success: false, 
-        message: `No document found for standard: ${cleanStandard}` 
-      });
-    }
-
     res.status(200).json({
       success: true,
-      count: standardDoc.subjects.length,
-      subjects: standardDoc.subjects
+      diagnostics: {
+        receivedStandard: rawStandard,
+        searchedStandard: cleanStandard,
+        databaseName: db.databaseName,
+        availableCollections: collectionNames,
+        foundDocument: !!standardDoc
+      },
+      subjects: standardDoc ? standardDoc.subjects : []
     });
 
   } catch (error) {
-    console.error("Backend Diagnostic Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
