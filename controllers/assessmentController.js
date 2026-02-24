@@ -295,8 +295,9 @@ exports.checkAssessmentsAvailability = async (req, res) => {
 
 exports.submitStudentStatus = async (req, res) => {
   try {
-    const { standard, division, subject, chapter, date, submissions } = req.body;
-    const submissionCollection = mongoose.connection.db.collection('student_submissions');
+    const { standard, division, subject, date, submissions } = req.body;
+    // We use the SAME collection as createAssessment
+    const assessmentCollection = mongoose.connection.db.collection('assessments');
 
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -306,50 +307,26 @@ exports.submitStudentStatus = async (req, res) => {
     const query = {
       standard,
       division,
-      subject,
-      chapter,
+      subjectCovered: subject, // Matching the field name used in createAssessment
       date: { $gte: startOfDay, $lte: endOfDay }
     };
 
     const updateData = {
       $set: {
-        submissions, // Array of { studentName, rollNo, status (S/N) }
+        submissions, // Array of { studentName, rollNo, status }
         updatedAt: new Date()
-      },
-      $setOnInsert: {
-        createdAt: new Date()
       }
     };
 
-    await submissionCollection.findOneAndUpdate(query, updateData, { upsert: true });
+    // This updates the existing assessment document with the student list
+    const result = await assessmentCollection.updateOne(query, updateData);
 
-    res.status(200).json({ success: true, message: "Student submissions saved!" });
+    res.status(200).json({ 
+      success: true, 
+      message: "Student status synced to assessment record" 
+    });
   } catch (error) {
     console.error("Submission Error:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-exports.getStudentSubmissions = async (req, res) => {
-  try {
-    const { standard, division, subject, chapter, date } = req.query;
-    const submissionCollection = mongoose.connection.db.collection('student_submissions');
-
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const record = await submissionCollection.findOne({
-      standard,
-      division,
-      subject,
-      chapter,
-      date: { $gte: startOfDay, $lte: endOfDay }
-    });
-
-    res.status(200).json({ success: true, data: record ? record.submissions : [] });
-  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
