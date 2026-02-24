@@ -330,3 +330,32 @@ exports.submitStudentStatus = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+exports.getAssessment = async (req, res) => {
+  try {
+    const { subject, standard, division, date } = req.query;
+    const assessmentCollection = mongoose.connection.db.collection('assessments');
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const assessment = await assessmentCollection.findOne({
+      subjectCovered: subject,
+      standard: standard,
+      division: division,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (assessment) {
+      // This 'assessment' object now contains topicCovered, homework, AND submissions
+      res.status(200).json({ success: true, data: assessment });
+    } else {
+      res.status(200).json({ success: false, message: "No assessment found" });
+    }
+  } catch (error) {
+    console.error("Fetch Assessment Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
