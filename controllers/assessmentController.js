@@ -293,43 +293,43 @@ exports.checkAssessmentsAvailability = async (req, res) => {
 };
 
 
-exports.submitStudentStatus = async (req, res) => {
-  try {
-    const { standard, division, subject, date, submissions } = req.body;
-    // We use the SAME collection as createAssessment
-    const assessmentCollection = mongoose.connection.db.collection('assessments');
+// exports.submitStudentStatus = async (req, res) => {
+//   try {
+//     const { standard, division, subject, date, submissions } = req.body;
+//     // We use the SAME collection as createAssessment
+//     const assessmentCollection = mongoose.connection.db.collection('assessments');
 
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+//     const startOfDay = new Date(date);
+//     startOfDay.setHours(0, 0, 0, 0);
+//     const endOfDay = new Date(date);
+//     endOfDay.setHours(23, 59, 59, 999);
 
-    const query = {
-      standard,
-      division,
-      subjectCovered: subject, // Matching the field name used in createAssessment
-      date: { $gte: startOfDay, $lte: endOfDay }
-    };
+//     const query = {
+//       standard,
+//       division,
+//       subjectCovered: subject, // Matching the field name used in createAssessment
+//       date: { $gte: startOfDay, $lte: endOfDay }
+//     };
 
-    const updateData = {
-      $set: {
-        submissions, // Array of { studentName, rollNo, status }
-        updatedAt: new Date()
-      }
-    };
+//     const updateData = {
+//       $set: {
+//         submissions, // Array of { studentName, rollNo, status }
+//         updatedAt: new Date()
+//       }
+//     };
 
-    // This updates the existing assessment document with the student list
-    const result = await assessmentCollection.updateOne(query, updateData);
+//     // This updates the existing assessment document with the student list
+//     const result = await assessmentCollection.updateOne(query, updateData);
 
-    res.status(200).json({ 
-      success: true, 
-      message: "Student status synced to assessment record" 
-    });
-  } catch (error) {
-    console.error("Submission Error:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
+//     res.status(200).json({ 
+//       success: true, 
+//       message: "Student status synced to assessment record" 
+//     });
+//   } catch (error) {
+//     console.error("Submission Error:", error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
 
 exports.getAssessment = async (req, res) => {
   try {
@@ -356,6 +356,46 @@ exports.getAssessment = async (req, res) => {
     }
   } catch (error) {
     console.error("Fetch Assessment Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+exports.submitStudentStatus = async (req, res) => {
+  try {
+    const { standard, division, subject, date, submissions, type } = req.body;
+    const assessmentCollection = mongoose.connection.db.collection('assessments');
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const query = {
+      standard,
+      division,
+      subjectCovered: subject,
+      date: { $gte: startOfDay, $lte: endOfDay }
+    };
+
+    // ✅ Determine which field to update
+    const fieldName = type === "homework" ? "submissions" : "activitySubmissions";
+
+    const updateData = {
+      $set: {
+        [fieldName]: submissions, // Dynamic key
+        updatedAt: new Date()
+      }
+    };
+
+    const result = await assessmentCollection.updateOne(query, updateData);
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Student status for ${type} synced to assessment record` 
+    });
+  } catch (error) {
+    console.error("Submission Error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
