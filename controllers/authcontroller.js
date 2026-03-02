@@ -615,3 +615,27 @@ exports.getMasterSubjectsByStandard = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.saveExamResult = async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const { standard, division, subject, mode, results } = req.body;
+
+    // This creates a record in the 'examresults' collection
+    const examData = {
+      standard,
+      division,
+      subject,
+      mode, // 'evaluation' or 'rechecking'
+      results, // The list of student IDs and marks from Flutter
+      staffid: new mongoose.Types.ObjectId(req.user.userId),
+      createdAt: new Date()
+    };
+
+    await db.collection('examresults').insertOne(examData);
+    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+  } catch (error) {
+    console.error("Save Exam Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

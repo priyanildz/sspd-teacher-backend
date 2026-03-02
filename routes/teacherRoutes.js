@@ -42,5 +42,7 @@ router.get('/my-assignment-options', authMiddleware, authcontroller.getTeacherAs
 router.get("/students/:standard/:division", authMiddleware, authcontroller.getStudentsByClass);
 router.get("/fees/structure/:standard", authMiddleware, authcontroller.getFeeStructure);
 router.get("/fees/status/:standard/:division", authMiddleware, authcontroller.getStudentFeesStatus);
+router.post("/save-exam-result", authMiddleware, authcontroller.saveExamResult);
+
 
 module.exports = router;
