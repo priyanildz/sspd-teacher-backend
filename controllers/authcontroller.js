@@ -639,3 +639,37 @@ exports.saveExamResult = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getExamMarks = async (req, res) => {
+  try {
+    const { standard, division, subject, mode } = req.query;
+    const db = mongoose.connection.db;
+
+    // 1. Fetch all students in the class
+    const students = await db.collection('students').find({ 
+      "admission.admissionstd": standard, 
+      "admission.admissiondivision": division 
+    }).sort({ "admission.grno": 1 }).toArray();
+
+    // 2. Fetch existing marks for this subject/mode
+    const existingEntry = await db.collection('examresults').findOne({ 
+      standard, 
+      division, 
+      subject, 
+      mode 
+    });
+
+    // 3. Map marks to students
+    const studentsWithMarks = students.map(student => {
+      const studentResult = existingEntry?.results?.find(r => r.studentId === student._id.toString());
+      return {
+        ...student,
+        currentMarks: studentResult ? studentResult.marks : ""
+      };
+    });
+
+    res.status(200).json(studentsWithMarks);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
