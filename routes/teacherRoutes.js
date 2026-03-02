@@ -43,6 +43,7 @@ router.get("/students/:standard/:division", authMiddleware, authcontroller.getSt
 router.get("/fees/structure/:standard", authMiddleware, authcontroller.getFeeStructure);
 router.get("/fees/status/:standard/:division", authMiddleware, authcontroller.getStudentFeesStatus);
 router.post("/save-exam-result", authMiddleware, authcontroller.saveExamResult);
-
+// routes/teacherRoutes.js
+router.get("/exam-marks", authMiddleware, authcontroller.getExamMarks);
 
 module.exports = router;
