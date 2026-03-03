@@ -673,3 +673,52 @@ exports.getExamMarks = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Fetch students and their original evaluation marks for re-checking
+exports.getRecheckMarks = async (req, res) => {
+  try {
+    const { standard, division, subject } = req.query;
+    const db = mongoose.connection.db;
+
+    // 1. Fetch all students in the class
+    const students = await db.collection('students').find({ 
+      "admission.admissionstd": standard, 
+      "admission.admissiondivision": division 
+    }).sort({ "admission.grno": 1 }).toArray();
+
+    // 2. Fetch the original evaluation marks (from the 'examresults' collection)
+    // We look for the entry where mode was 'evaluation'
+    const originalEntry = await db.collection('examresults').findOne({ 
+      standard, 
+      division, 
+      subject,
+      mode: 'evaluation' 
+    });
+
+    // 3. Fetch any existing rechecking progress
+    const existingRecheck = await db.collection('examresults').findOne({ 
+      standard, 
+      division, 
+      subject,
+      mode: 'rechecking' 
+    });
+
+    // 4. Map everything together
+    const recheckData = students.map(student => {
+      const studentId = student._id.toString();
+      const originalResult = originalEntry?.results?.find(r => r.studentId === studentId);
+      const currentRecheck = existingRecheck?.results?.find(r => r.studentId === studentId);
+
+      return {
+        ...student,
+        originalMarks: originalResult ? originalResult.marks : "0",
+        currentRecheckMarks: currentRecheck ? currentRecheck.marks : "",
+        comment: currentRecheck ? currentRecheck.comment : ""
+      };
+    });
+
+    res.status(200).json(recheckData);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

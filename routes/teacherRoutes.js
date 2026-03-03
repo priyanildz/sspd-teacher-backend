@@ -45,5 +45,6 @@ router.get("/fees/status/:standard/:division", authMiddleware, authcontroller.ge
 router.post("/save-exam-result", authMiddleware, authcontroller.saveExamResult);
 // routes/teacherRoutes.js
 router.get("/exam-marks", authMiddleware, authcontroller.getExamMarks);
+router.get("/recheck-marks", authMiddleware, authcontroller.getRecheckMarks);
 
 module.exports = router;
