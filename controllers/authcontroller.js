@@ -722,3 +722,34 @@ exports.getRecheckMarks = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.saveExamResult = async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const { standard, division, subject, mode, results } = req.body;
+
+    // Use findOneAndUpdate with upsert: true to prevent duplicate records
+    await db.collection('examresults').findOneAndUpdate(
+      { 
+        standard, 
+        division, 
+        subject, 
+        mode 
+      },
+      { 
+        $set: { 
+          results, 
+          staffid: new mongoose.Types.ObjectId(req.user.userId),
+          updatedAt: new Date() 
+        },
+        $setOnInsert: { createdAt: new Date() } // Only sets createdAt if a new doc is made
+      },
+      { upsert: true }
+    );
+
+    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+  } catch (error) {
+    console.error("Save Exam Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
