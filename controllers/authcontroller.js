@@ -753,3 +753,52 @@ exports.saveExamResult = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.getClassReports = async (req, res) => {
+  try {
+    const { standard, division } = req.params;
+    const db = mongoose.connection.db;
+
+    // 1. Fetch all students in the class
+    const students = await db.collection('students').find({ 
+      "admission.admissionstd": standard, 
+      "admission.admissiondivision": division 
+    }).sort({ "admission.grno": 1 }).toArray();
+
+    // 2. Fetch all exam results for this class
+    const examResults = await db.collection('examresults').find({ 
+      standard, 
+      division 
+    }).toArray();
+
+    // 3. Map marks to each student
+    const reports = students.map(student => {
+      let studentMarks = {
+        name: `${student.firstname} ${student.lastname}`,
+        grno: student.admission?.grno || "N/A",
+        marks: {}
+      };
+
+      let totalMarks = 0;
+      let subjectCount = 0;
+
+      examResults.forEach(exam => {
+        const studentResult = exam.results?.find(r => r.studentId === student._id.toString());
+        const marksValue = parseInt(studentResult?.marks) || 0;
+        
+        studentMarks.marks[exam.subject] = marksValue;
+        totalMarks += marksValue;
+        if(marksValue > 0) subjectCount++;
+      });
+
+      studentMarks.tm = totalMarks;
+      studentMarks.percentage = subjectCount > 0 ? (totalMarks / subjectCount).toFixed(1) : "0.0";
+      
+      return studentMarks;
+    });
+
+    res.status(200).json({ success: true, reports });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

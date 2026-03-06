@@ -48,5 +48,6 @@ router.get("/exam-marks", authMiddleware, authcontroller.getExamMarks);
 // routes/teacherRoutes.js
 router.get("/recheck-marks", authMiddleware, authcontroller.getRecheckMarks); // Fetches original marks
 router.post("/save-exam-result", authMiddleware, authcontroller.saveExamResult); // Submits rechecked marks
+router.get("/class-reports/:standard/:division", authMiddleware, authcontroller.getClassReports);
 
 module.exports = router;
