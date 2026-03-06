@@ -759,19 +759,19 @@ exports.getClassReports = async (req, res) => {
     const { standard, division } = req.params;
     const db = mongoose.connection.db;
 
-    // 1. Fetch all students in the class
     const students = await db.collection('students').find({ 
       "admission.admissionstd": standard, 
       "admission.admissiondivision": division 
     }).sort({ "admission.grno": 1 }).toArray();
 
-    // 2. Fetch all exam results for this class
     const examResults = await db.collection('examresults').find({ 
       standard, 
       division 
     }).toArray();
 
-    // 3. Map marks to each student
+    // ✅ Get unique subjects list for columns
+    const allSubjects = [...new Set(examResults.map(exam => exam.subject))];
+
     const reports = students.map(student => {
       let studentMarks = {
         name: `${student.firstname} ${student.lastname}`,
@@ -782,11 +782,12 @@ exports.getClassReports = async (req, res) => {
       let totalMarks = 0;
       let subjectCount = 0;
 
-      examResults.forEach(exam => {
-        const studentResult = exam.results?.find(r => r.studentId === student._id.toString());
+      allSubjects.forEach(subjectName => {
+        const exam = examResults.find(e => e.subject === subjectName);
+        const studentResult = exam?.results?.find(r => r.studentId === student._id.toString());
         const marksValue = parseInt(studentResult?.marks) || 0;
         
-        studentMarks.marks[exam.subject] = marksValue;
+        studentMarks.marks[subjectName] = marksValue;
         totalMarks += marksValue;
         if(marksValue > 0) subjectCount++;
       });
@@ -797,7 +798,7 @@ exports.getClassReports = async (req, res) => {
       return studentMarks;
     });
 
-    res.status(200).json({ success: true, reports });
+    res.status(200).json({ success: true, reports, subjects: allSubjects });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
