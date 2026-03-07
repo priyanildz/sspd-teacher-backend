@@ -805,25 +805,57 @@ exports.getRecheckMarks = async (req, res) => {
 // };
 
 
+// exports.saveExamResult = async (req, res) => {
+//   try {
+//     const db = mongoose.connection.db;
+//     // Destructure 'semester' from the body (this will be 'Sem 1', 'Sem 2', etc.)
+//     const { standard, division, subject, mode, results, semester } = req.body;
+
+//     await db.collection('examresults').findOneAndUpdate(
+//       { 
+//         standard, 
+//         division, 
+//         subject, 
+//         mode,
+//         // Include semester in the search filter to update the correct record
+//         semester: semester 
+//       },
+//       { 
+//         $set: { 
+//           results, 
+//           semester, // ✅ THIS ENSURES IT IS NO LONGER NULL
+//           staffid: new mongoose.Types.ObjectId(req.user.userId),
+//           updatedAt: new Date() 
+//         },
+//         $setOnInsert: { createdAt: new Date() }
+//       },
+//       { upsert: true }
+//     );
+
+//     res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 exports.saveExamResult = async (req, res) => {
   try {
     const db = mongoose.connection.db;
-    // Destructure 'semester' from the body (this will be 'Sem 1', 'Sem 2', etc.)
     const { standard, division, subject, mode, results, semester } = req.body;
 
+    // 1. Save or Update the Exam Marks in 'examresults'
     await db.collection('examresults').findOneAndUpdate(
       { 
         standard, 
         division, 
         subject, 
         mode,
-        // Include semester in the search filter to update the correct record
         semester: semester 
       },
       { 
         $set: { 
           results, 
-          semester, // ✅ THIS ENSURES IT IS NO LONGER NULL
+          semester, 
           staffid: new mongoose.Types.ObjectId(req.user.userId),
           updatedAt: new Date() 
         },
@@ -832,11 +864,28 @@ exports.saveExamResult = async (req, res) => {
       { upsert: true }
     );
 
-    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+    // 2. ✅ NEW: Automatically update the Status in 'paperevaluations'
+    // We search for an assignment that matches the teacher, class, subject, and exam type
+    await db.collection('paperevaluations').updateOne(
+      {
+        assignedteacher: new mongoose.Types.ObjectId(req.user.userId),
+        standard: standard,
+        division: division,
+        subject: subject,
+        examtype: semester // Matches the exam name like "Sem 2"
+      },
+      {
+        $set: { status: "Completed" } // Permanently mark it as Completed in DB
+      }
+    );
+
+    res.status(200).json({ success: true, message: "Marks submitted and assignment updated!" });
   } catch (error) {
+    console.error("Save Exam Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 exports.getClassReports = async (req, res) => {
   try {
