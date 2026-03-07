@@ -754,9 +754,61 @@ exports.saveExamResult = async (req, res) => {
   }
 };
 
+// exports.getClassReports = async (req, res) => {
+//   try {
+//     const { standard, division } = req.params;
+//     const db = mongoose.connection.db;
+
+//     const students = await db.collection('students').find({ 
+//       "admission.admissionstd": standard, 
+//       "admission.admissiondivision": division 
+//     }).sort({ "admission.grno": 1 }).toArray();
+
+//     const examResults = await db.collection('examresults').find({ 
+//       standard, 
+//       division 
+//     }).toArray();
+
+//     // ✅ Get unique subjects list for columns
+//     const allSubjects = [...new Set(examResults.map(exam => exam.subject))];
+
+//     const reports = students.map(student => {
+//       let studentMarks = {
+//         name: `${student.firstname} ${student.lastname}`,
+//         grno: student.admission?.grno || "N/A",
+//         marks: {}
+//       };
+
+//       let totalMarks = 0;
+//       let subjectCount = 0;
+
+//       allSubjects.forEach(subjectName => {
+//         const exam = examResults.find(e => e.subject === subjectName);
+//         const studentResult = exam?.results?.find(r => r.studentId === student._id.toString());
+//         const marksValue = parseInt(studentResult?.marks) || 0;
+        
+//         studentMarks.marks[subjectName] = marksValue;
+//         totalMarks += marksValue;
+//         if(marksValue > 0) subjectCount++;
+//       });
+
+//       studentMarks.tm = totalMarks;
+//       studentMarks.percentage = subjectCount > 0 ? (totalMarks / subjectCount).toFixed(1) : "0.0";
+      
+//       return studentMarks;
+//     });
+
+//     res.status(200).json({ success: true, reports, subjects: allSubjects });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
 exports.getClassReports = async (req, res) => {
   try {
     const { standard, division } = req.params;
+    const { examtype } = req.query; // ✅ GET examtype from URL query
     const db = mongoose.connection.db;
 
     const students = await db.collection('students').find({ 
@@ -764,12 +816,12 @@ exports.getClassReports = async (req, res) => {
       "admission.admissiondivision": division 
     }).sort({ "admission.grno": 1 }).toArray();
 
-    const examResults = await db.collection('examresults').find({ 
-      standard, 
-      division 
-    }).toArray();
+    // ✅ Filter by examtype (e.g., "Sem 1", "Sem 2")
+    const query = { standard, division };
+    if (examtype) query.examtype = examtype;
 
-    // ✅ Get unique subjects list for columns
+    const examResults = await db.collection('examresults').find(query).toArray();
+
     const allSubjects = [...new Set(examResults.map(exam => exam.subject))];
 
     const reports = students.map(student => {
