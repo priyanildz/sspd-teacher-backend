@@ -808,15 +808,22 @@ exports.getRecheckMarks = async (req, res) => {
 exports.saveExamResult = async (req, res) => {
   try {
     const db = mongoose.connection.db;
-    // ✅ Include 'semester' in the destructuring
+    // Destructure 'semester' from the body (this will be 'Sem 1', 'Sem 2', etc.)
     const { standard, division, subject, mode, results, semester } = req.body;
 
     await db.collection('examresults').findOneAndUpdate(
-      { standard, division, subject, mode, semester }, // ✅ Add semester to filter
+      { 
+        standard, 
+        division, 
+        subject, 
+        mode,
+        // Include semester in the search filter to update the correct record
+        semester: semester 
+      },
       { 
         $set: { 
           results, 
-          semester, // ✅ Ensure it is saved in the document
+          semester, // ✅ THIS ENSURES IT IS NO LONGER NULL
           staffid: new mongoose.Types.ObjectId(req.user.userId),
           updatedAt: new Date() 
         },
@@ -825,7 +832,7 @@ exports.saveExamResult = async (req, res) => {
       { upsert: true }
     );
 
-    res.status(200).json({ success: true, message: "Marks saved!" });
+    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
