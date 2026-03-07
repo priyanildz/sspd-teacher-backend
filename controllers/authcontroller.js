@@ -616,29 +616,29 @@ exports.getMasterSubjectsByStandard = async (req, res) => {
   }
 };
 
-exports.saveExamResult = async (req, res) => {
-  try {
-    const db = mongoose.connection.db;
-    const { standard, division, subject, mode, results } = req.body;
+// exports.saveExamResult = async (req, res) => {
+//   try {
+//     const db = mongoose.connection.db;
+//     const { standard, division, subject, mode, results } = req.body;
 
-    // This creates a record in the 'examresults' collection
-    const examData = {
-      standard,
-      division,
-      subject,
-      mode, // 'evaluation' or 'rechecking'
-      results, // The list of student IDs and marks from Flutter
-      staffid: new mongoose.Types.ObjectId(req.user.userId),
-      createdAt: new Date()
-    };
+//     // This creates a record in the 'examresults' collection
+//     const examData = {
+//       standard,
+//       division,
+//       subject,
+//       mode, // 'evaluation' or 'rechecking'
+//       results, // The list of student IDs and marks from Flutter
+//       staffid: new mongoose.Types.ObjectId(req.user.userId),
+//       createdAt: new Date()
+//     };
 
-    await db.collection('examresults').insertOne(examData);
-    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
-  } catch (error) {
-    console.error("Save Exam Error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+//     await db.collection('examresults').insertOne(examData);
+//     res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+//   } catch (error) {
+//     console.error("Save Exam Error:", error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 
 exports.getExamMarks = async (req, res) => {
   try {
@@ -723,36 +723,36 @@ exports.getRecheckMarks = async (req, res) => {
   }
 };
 
-exports.saveExamResult = async (req, res) => {
-  try {
-    const db = mongoose.connection.db;
-    const { standard, division, subject, mode, results } = req.body;
+// exports.saveExamResult = async (req, res) => {
+//   try {
+//     const db = mongoose.connection.db;
+//     const { standard, division, subject, mode, results } = req.body;
 
-    // Use findOneAndUpdate with upsert: true to prevent duplicate records
-    await db.collection('examresults').findOneAndUpdate(
-      { 
-        standard, 
-        division, 
-        subject, 
-        mode 
-      },
-      { 
-        $set: { 
-          results, 
-          staffid: new mongoose.Types.ObjectId(req.user.userId),
-          updatedAt: new Date() 
-        },
-        $setOnInsert: { createdAt: new Date() } // Only sets createdAt if a new doc is made
-      },
-      { upsert: true }
-    );
+//     // Use findOneAndUpdate with upsert: true to prevent duplicate records
+//     await db.collection('examresults').findOneAndUpdate(
+//       { 
+//         standard, 
+//         division, 
+//         subject, 
+//         mode 
+//       },
+//       { 
+//         $set: { 
+//           results, 
+//           staffid: new mongoose.Types.ObjectId(req.user.userId),
+//           updatedAt: new Date() 
+//         },
+//         $setOnInsert: { createdAt: new Date() } // Only sets createdAt if a new doc is made
+//       },
+//       { upsert: true }
+//     );
 
-    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
-  } catch (error) {
-    console.error("Save Exam Error:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+//     res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+//   } catch (error) {
+//     console.error("Save Exam Error:", error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 
 // exports.getClassReports = async (req, res) => {
 //   try {
@@ -804,6 +804,32 @@ exports.saveExamResult = async (req, res) => {
 //   }
 // };
 
+
+exports.saveExamResult = async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    // ✅ Include 'semester' in the destructuring
+    const { standard, division, subject, mode, results, semester } = req.body;
+
+    await db.collection('examresults').findOneAndUpdate(
+      { standard, division, subject, mode, semester }, // ✅ Add semester to filter
+      { 
+        $set: { 
+          results, 
+          semester, // ✅ Ensure it is saved in the document
+          staffid: new mongoose.Types.ObjectId(req.user.userId),
+          updatedAt: new Date() 
+        },
+        $setOnInsert: { createdAt: new Date() }
+      },
+      { upsert: true }
+    );
+
+    res.status(200).json({ success: true, message: "Marks saved!" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 exports.getClassReports = async (req, res) => {
   try {
