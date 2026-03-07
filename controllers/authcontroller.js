@@ -841,21 +841,16 @@ exports.getRecheckMarks = async (req, res) => {
 exports.saveExamResult = async (req, res) => {
   try {
     const db = mongoose.connection.db;
+    // We receive 'semester' from the frontend (e.g., "Sem 2")
     const { standard, division, subject, mode, results, semester } = req.body;
 
-    // 1. Save or Update the Exam Marks in 'examresults'
+    // 1. Save marks
     await db.collection('examresults').findOneAndUpdate(
-      { 
-        standard, 
-        division, 
-        subject, 
-        mode,
-        semester: semester 
-      },
+      { standard, division, subject, mode, semester }, 
       { 
         $set: { 
           results, 
-          semester, 
+          semester: semester, // ✅ Explicitly set this to prevent it being null
           staffid: new mongoose.Types.ObjectId(req.user.userId),
           updatedAt: new Date() 
         },
@@ -864,24 +859,14 @@ exports.saveExamResult = async (req, res) => {
       { upsert: true }
     );
 
-    // 2. ✅ NEW: Automatically update the Status in 'paperevaluations'
-    // We search for an assignment that matches the teacher, class, subject, and exam type
+    // 2. ✅ Automatically update Status in paperevaluations to "Completed"
     await db.collection('paperevaluations').updateOne(
-      {
-        assignedteacher: new mongoose.Types.ObjectId(req.user.userId),
-        standard: standard,
-        division: division,
-        subject: subject,
-        examtype: semester // Matches the exam name like "Sem 2"
-      },
-      {
-        $set: { status: "Completed" } // Permanently mark it as Completed in DB
-      }
+      { standard, division, subject, examtype: semester },
+      { $set: { status: "Completed" } }
     );
 
-    res.status(200).json({ success: true, message: "Marks submitted and assignment updated!" });
+    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
   } catch (error) {
-    console.error("Save Exam Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
