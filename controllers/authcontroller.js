@@ -838,19 +838,51 @@ exports.getRecheckMarks = async (req, res) => {
 //   }
 // };
 
+// exports.saveExamResult = async (req, res) => {
+//   try {
+//     const db = mongoose.connection.db;
+//     // We receive 'semester' from the frontend (e.g., "Sem 2")
+//     const { standard, division, subject, mode, results, semester } = req.body;
+
+//     // 1. Save marks
+//     await db.collection('examresults').findOneAndUpdate(
+//       { standard, division, subject, mode, semester }, 
+//       { 
+//         $set: { 
+//           results, 
+//           semester: semester, // ✅ Explicitly set this to prevent it being null
+//           staffid: new mongoose.Types.ObjectId(req.user.userId),
+//           updatedAt: new Date() 
+//         },
+//         $setOnInsert: { createdAt: new Date() }
+//       },
+//       { upsert: true }
+//     );
+
+//     // 2. ✅ Automatically update Status in paperevaluations to "Completed"
+//     await db.collection('paperevaluations').updateOne(
+//       { standard, division, subject, examtype: semester },
+//       { $set: { status: "Completed" } }
+//     );
+
+//     res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 exports.saveExamResult = async (req, res) => {
   try {
     const db = mongoose.connection.db;
-    // We receive 'semester' from the frontend (e.g., "Sem 2")
     const { standard, division, subject, mode, results, semester } = req.body;
 
-    // 1. Save marks
+    // 1. Save or update marks in 'examresults'
     await db.collection('examresults').findOneAndUpdate(
       { standard, division, subject, mode, semester }, 
       { 
         $set: { 
           results, 
-          semester: semester, // ✅ Explicitly set this to prevent it being null
+          semester: semester, 
           staffid: new mongoose.Types.ObjectId(req.user.userId),
           updatedAt: new Date() 
         },
@@ -859,13 +891,32 @@ exports.saveExamResult = async (req, res) => {
       { upsert: true }
     );
 
-    // 2. ✅ Automatically update Status in paperevaluations to "Completed"
-    await db.collection('paperevaluations').updateOne(
-      { standard, division, subject, examtype: semester },
-      { $set: { status: "Completed" } }
-    );
+    // 2. ✅ AUTOMATIC STATUS UPDATES
+    if (mode === "rechecking") {
+      // Update Status in 'recheckings' collection
+      await db.collection('recheckings').updateOne(
+        { 
+          standard: standard, 
+          division: division, 
+          subject: subject, 
+          examtype: semester 
+        },
+        { $set: { status: "Completed" } }
+      );
+    } else {
+      // Update Status in 'paperevaluations' collection for regular checking
+      await db.collection('paperevaluations').updateOne(
+        { 
+          standard: standard, 
+          division: division, 
+          subject: subject, 
+          examtype: semester 
+        },
+        { $set: { status: "Completed" } }
+      );
+    }
 
-    res.status(200).json({ success: true, message: "Marks submitted successfully!" });
+    res.status(200).json({ success: true, message: "Marks submitted and status updated!" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
