@@ -1054,18 +1054,21 @@ exports.getClassReports = async (req, res) => {
     const { examtype } = req.query; 
     const db = mongoose.connection.db;
 
+    // 1. Fetch all students in the class
     const students = await db.collection('students').find({ 
       "admission.admissionstd": standard, 
       "admission.admissiondivision": division 
     }).sort({ "admission.grno": 1 }).toArray();
 
-    const allResults = await db.collection('examresults').find({ 
+    // 2. Fetch ALL result documents for this class and exam type (both evaluation & rechecking)
+    const allResultDocs = await db.collection('examresults').find({ 
       standard: standard, 
       division: division, 
       semester: examtype 
     }).toArray();
 
-    const subjects = ["Maths", "Science", "English", "Hindi", "Marathi", "Sanskrit", "Computer"];
+    // 3. Extract dynamic subject list from the fetched documents
+    const subjects = [...new Set(allResultDocs.map(doc => doc.subject))];
 
     const reports = students.map(student => {
       let studentMarks = {
@@ -1078,28 +1081,27 @@ exports.getClassReports = async (req, res) => {
 
       subjects.forEach(sub => {
         // Find documents for this specific subject
-        const recheckDoc = allResults.find(r => r.subject === sub && r.mode === "rechecking");
-        const evalDoc = allResults.find(r => r.subject === sub && r.mode === "evaluation");
+        const subjectDocs = allResultDocs.filter(d => d.subject === sub);
+        
+        // Separate by mode
+        const recheckDoc = subjectDocs.find(d => d.mode === "rechecking");
+        const evalDoc = subjectDocs.find(d => d.mode !== "rechecking"); // Fallback for any other mode like 'evaluation' or the exam name
 
-        // Find the specific student's entry in those documents
+        // Extract specific student entry
         const recheckEntry = recheckDoc?.results?.find(res => res.studentId === student._id.toString());
         const evalEntry = evalDoc?.results?.find(res => res.studentId === student._id.toString());
 
-        // ✅ IMPROVED PRIORITY LOGIC:
-        // 1. Start with the Evaluation mark as the baseline
-        // 2. ONLY use the Rechecking mark if it is NOT an empty string
-        // 3. Default to "0" if nothing is found
-        
+        // ✅ PRIORITY LOGIC: 
+        // Use Rechecking marks if they exist and are NOT empty. 
+        // Otherwise, use Evaluation marks.
         let finalMarkStr = "0";
-        
-        if (recheckEntry && recheckEntry.marks !== "") {
-          finalMarkStr = recheckEntry.marks; // Use rechecked mark
-        } else if (evalEntry && evalEntry.marks !== "") {
-          finalMarkStr = evalEntry.marks; // Fallback to original evaluation
+        if (recheckEntry && recheckEntry.marks !== "" && recheckEntry.marks !== null) {
+          finalMarkStr = recheckEntry.marks;
+        } else if (evalEntry && evalEntry.marks !== "" && evalEntry.marks !== null) {
+          finalMarkStr = evalEntry.marks;
         }
 
         const marksValue = parseInt(finalMarkStr) || 0;
-        
         studentMarks.marks[sub] = marksValue;
         totalMarks += marksValue;
       });
@@ -1108,8 +1110,13 @@ exports.getClassReports = async (req, res) => {
       return studentMarks;
     });
 
-    res.status(200).json({ success: true, reports, subjects });
+    res.status(200).json({ 
+      success: true, 
+      reports, 
+      subjects // Returns only subjects that have actual data in the DB
+    });
   } catch (error) {
+    console.error("getClassReports Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
