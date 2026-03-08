@@ -923,34 +923,89 @@ exports.saveExamResult = async (req, res) => {
 };
 
 
+// exports.getClassReports = async (req, res) => {
+//   try {
+//     const { standard, division } = req.params;
+//     const { examtype } = req.query; // This will be "Sem 1", "Sem 2", etc.
+//     const db = mongoose.connection.db;
+
+//     // 1. Fetch all students in the class to ensure everyone is listed
+//     const students = await db.collection('students').find({ 
+//       "admission.admissionstd": standard, 
+//       "admission.admissiondivision": division 
+//     }).sort({ "admission.grno": 1 }).toArray();
+
+//     // 2. Fetch marks from the ADMIN collection (ExamResults)
+//     // IMPORTANT: Ensure the collection name matches your Admin DB (likely 'examresults')
+//     const allResults = await db.collection('examresults').find({ 
+//       standard: standard, 
+//       division: division, 
+//       semester: examtype // This matches the 'semester' field in your Admin model
+//     }).toArray();
+
+//     // 3. Define which subjects you want to include in the report
+//     // You can also get these dynamically by looking at keys in the documents
+//     const subjects = ["Maths", "Science", "English", "Hindi", "Marathi", "Sanskrit", "Computer"];
+
+//     const reports = students.map(student => {
+//       // Find the specific result record for this student
+//       const studentResult = allResults.find(r => r.studentId.toString() === student._id.toString());
+      
+//       let studentMarks = {
+//         name: `${student.firstname} ${student.lastname}`,
+//         grno: student.admission?.grno || "N/A",
+//         marks: {}
+//       };
+
+//       let totalMarks = 0;
+//       let subjectCount = 0;
+
+//       subjects.forEach(sub => {
+//         // In your Admin model, marks are stored directly: studentResult["Maths"]
+//         const marksValue = studentResult ? (parseInt(studentResult[sub]) || 0) : 0;
+//         studentMarks.marks[sub] = marksValue;
+//         totalMarks += marksValue;
+//         if (marksValue > 0) subjectCount++;
+//       });
+
+//       studentMarks.tm = totalMarks;
+//       studentMarks.percentage = subjectCount > 0 ? (totalMarks / subjectCount).toFixed(1) : "0.0";
+      
+//       return studentMarks;
+//     });
+
+//     res.status(200).json({ 
+//       success: true, 
+//       reports, 
+//       subjects: subjects 
+//     });
+//   } catch (error) {
+//     console.error("Report Fetch Error:", error);
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 exports.getClassReports = async (req, res) => {
   try {
     const { standard, division } = req.params;
-    const { examtype } = req.query; // This will be "Sem 1", "Sem 2", etc.
+    const { examtype } = req.query; 
     const db = mongoose.connection.db;
 
-    // 1. Fetch all students in the class to ensure everyone is listed
     const students = await db.collection('students').find({ 
       "admission.admissionstd": standard, 
       "admission.admissiondivision": division 
     }).sort({ "admission.grno": 1 }).toArray();
 
-    // 2. Fetch marks from the ADMIN collection (ExamResults)
-    // IMPORTANT: Ensure the collection name matches your Admin DB (likely 'examresults')
+    // ✅ FETCH ALL: Get both 'evaluation' and 'rechecking' records
     const allResults = await db.collection('examresults').find({ 
       standard: standard, 
       division: division, 
-      semester: examtype // This matches the 'semester' field in your Admin model
+      semester: examtype 
     }).toArray();
 
-    // 3. Define which subjects you want to include in the report
-    // You can also get these dynamically by looking at keys in the documents
     const subjects = ["Maths", "Science", "English", "Hindi", "Marathi", "Sanskrit", "Computer"];
 
     const reports = students.map(student => {
-      // Find the specific result record for this student
-      const studentResult = allResults.find(r => r.studentId.toString() === student._id.toString());
-      
       let studentMarks = {
         name: `${student.firstname} ${student.lastname}`,
         grno: student.admission?.grno || "N/A",
@@ -961,26 +1016,34 @@ exports.getClassReports = async (req, res) => {
       let subjectCount = 0;
 
       subjects.forEach(sub => {
-        // In your Admin model, marks are stored directly: studentResult["Maths"]
-        const marksValue = studentResult ? (parseInt(studentResult[sub]) || 0) : 0;
+        // ✅ PRIORITY LOGIC:
+        // 1. Look for a 'rechecking' record for this student/subject
+        // 2. If not found, look for 'evaluation' record
+        const recheckDoc = allResults.find(r => r.subject === sub && r.mode === "rechecking");
+        const evalDoc = allResults.find(r => r.subject === sub && r.mode === "evaluation");
+
+        const recheckEntry = recheckDoc?.results?.find(res => res.studentId === student._id.toString());
+        const evalEntry = evalDoc?.results?.find(res => res.studentId === student._id.toString());
+
+        // Final mark is Rechecking if it exists and isn't empty, otherwise Evaluation
+        const finalMarkStr = (recheckEntry && recheckEntry.marks !== "") 
+                             ? recheckEntry.marks 
+                             : (evalEntry ? evalEntry.marks : "0");
+        
+        const marksValue = parseInt(finalMarkStr) || 0;
+        
         studentMarks.marks[sub] = marksValue;
         totalMarks += marksValue;
         if (marksValue > 0) subjectCount++;
       });
 
       studentMarks.tm = totalMarks;
-      studentMarks.percentage = subjectCount > 0 ? (totalMarks / subjectCount).toFixed(1) : "0.0";
-      
+      // Note: Percentage is calculated on frontend based on UT vs SEM rules
       return studentMarks;
     });
 
-    res.status(200).json({ 
-      success: true, 
-      reports, 
-      subjects: subjects 
-    });
+    res.status(200).json({ success: true, reports, subjects });
   } catch (error) {
-    console.error("Report Fetch Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
