@@ -985,6 +985,69 @@ exports.saveExamResult = async (req, res) => {
 //   }
 // };
 
+// exports.getClassReports = async (req, res) => {
+//   try {
+//     const { standard, division } = req.params;
+//     const { examtype } = req.query; 
+//     const db = mongoose.connection.db;
+
+//     const students = await db.collection('students').find({ 
+//       "admission.admissionstd": standard, 
+//       "admission.admissiondivision": division 
+//     }).sort({ "admission.grno": 1 }).toArray();
+
+//     // ✅ FETCH ALL: Get both 'evaluation' and 'rechecking' records
+//     const allResults = await db.collection('examresults').find({ 
+//       standard: standard, 
+//       division: division, 
+//       semester: examtype 
+//     }).toArray();
+
+//     const subjects = ["Maths", "Science", "English", "Hindi", "Marathi", "Sanskrit", "Computer"];
+
+//     const reports = students.map(student => {
+//       let studentMarks = {
+//         name: `${student.firstname} ${student.lastname}`,
+//         grno: student.admission?.grno || "N/A",
+//         marks: {}
+//       };
+
+//       let totalMarks = 0;
+//       let subjectCount = 0;
+
+//       subjects.forEach(sub => {
+//         // ✅ PRIORITY LOGIC:
+//         // 1. Look for a 'rechecking' record for this student/subject
+//         // 2. If not found, look for 'evaluation' record
+//         const recheckDoc = allResults.find(r => r.subject === sub && r.mode === "rechecking");
+//         const evalDoc = allResults.find(r => r.subject === sub && r.mode === "evaluation");
+
+//         const recheckEntry = recheckDoc?.results?.find(res => res.studentId === student._id.toString());
+//         const evalEntry = evalDoc?.results?.find(res => res.studentId === student._id.toString());
+
+//         // Final mark is Rechecking if it exists and isn't empty, otherwise Evaluation
+//         const finalMarkStr = (recheckEntry && recheckEntry.marks !== "") 
+//                              ? recheckEntry.marks 
+//                              : (evalEntry ? evalEntry.marks : "0");
+        
+//         const marksValue = parseInt(finalMarkStr) || 0;
+        
+//         studentMarks.marks[sub] = marksValue;
+//         totalMarks += marksValue;
+//         if (marksValue > 0) subjectCount++;
+//       });
+
+//       studentMarks.tm = totalMarks;
+//       // Note: Percentage is calculated on frontend based on UT vs SEM rules
+//       return studentMarks;
+//     });
+
+//     res.status(200).json({ success: true, reports, subjects });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
 exports.getClassReports = async (req, res) => {
   try {
     const { standard, division } = req.params;
@@ -996,7 +1059,6 @@ exports.getClassReports = async (req, res) => {
       "admission.admissiondivision": division 
     }).sort({ "admission.grno": 1 }).toArray();
 
-    // ✅ FETCH ALL: Get both 'evaluation' and 'rechecking' records
     const allResults = await db.collection('examresults').find({ 
       standard: standard, 
       division: division, 
@@ -1013,32 +1075,36 @@ exports.getClassReports = async (req, res) => {
       };
 
       let totalMarks = 0;
-      let subjectCount = 0;
 
       subjects.forEach(sub => {
-        // ✅ PRIORITY LOGIC:
-        // 1. Look for a 'rechecking' record for this student/subject
-        // 2. If not found, look for 'evaluation' record
+        // Find documents for this specific subject
         const recheckDoc = allResults.find(r => r.subject === sub && r.mode === "rechecking");
         const evalDoc = allResults.find(r => r.subject === sub && r.mode === "evaluation");
 
+        // Find the specific student's entry in those documents
         const recheckEntry = recheckDoc?.results?.find(res => res.studentId === student._id.toString());
         const evalEntry = evalDoc?.results?.find(res => res.studentId === student._id.toString());
 
-        // Final mark is Rechecking if it exists and isn't empty, otherwise Evaluation
-        const finalMarkStr = (recheckEntry && recheckEntry.marks !== "") 
-                             ? recheckEntry.marks 
-                             : (evalEntry ? evalEntry.marks : "0");
+        // ✅ IMPROVED PRIORITY LOGIC:
+        // 1. Start with the Evaluation mark as the baseline
+        // 2. ONLY use the Rechecking mark if it is NOT an empty string
+        // 3. Default to "0" if nothing is found
         
+        let finalMarkStr = "0";
+        
+        if (recheckEntry && recheckEntry.marks !== "") {
+          finalMarkStr = recheckEntry.marks; // Use rechecked mark
+        } else if (evalEntry && evalEntry.marks !== "") {
+          finalMarkStr = evalEntry.marks; // Fallback to original evaluation
+        }
+
         const marksValue = parseInt(finalMarkStr) || 0;
         
         studentMarks.marks[sub] = marksValue;
         totalMarks += marksValue;
-        if (marksValue > 0) subjectCount++;
       });
 
       studentMarks.tm = totalMarks;
-      // Note: Percentage is calculated on frontend based on UT vs SEM rules
       return studentMarks;
     });
 
