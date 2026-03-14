@@ -103,9 +103,36 @@ const numberToRoman = (num) => {
 };
 
 // POST: Create a new announcement (protected route)
+// router.post('/add-announcement', authMiddleware, async (req, res) => {
+//   try {
+//     const { std, className, publishTo, subject, message, status } = req.body;
+
+//     const newAnnouncement = new Announcement({
+//       std,
+//       className,
+//       publishTo,
+//       subject,
+//       message,
+//       status: status || 'sent',
+//       senderId: req.user.userId, 
+//     });
+
+//     await newAnnouncement.save();
+//     res.status(201).json(newAnnouncement);
+//   } catch (err) {
+//     console.error("Error saving announcement:", err);
+//     res.status(400).json({ error: err.message });
+//   }
+// });
+
 router.post('/add-announcement', authMiddleware, async (req, res) => {
   try {
     const { std, className, publishTo, subject, message, status } = req.body;
+
+    // Check if the user ID is actually coming through from middleware
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({ error: "User identity not found in token" });
+    }
 
     const newAnnouncement = new Announcement({
       std,
@@ -120,10 +147,11 @@ router.post('/add-announcement', authMiddleware, async (req, res) => {
     await newAnnouncement.save();
     res.status(201).json(newAnnouncement);
   } catch (err) {
-    console.error("Error saving announcement:", err);
+    console.error("🔥 POST Error:", err);
     res.status(400).json({ error: err.message });
   }
 });
+
 
 // GET: Get all announcements, with optional status filter
 router.get('/get-announcement', authMiddleware, async (req, res) => {
