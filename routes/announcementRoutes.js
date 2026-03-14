@@ -17,6 +17,30 @@ const numberToRoman = (num) => {
 };
 
 // POST: Create a new announcement (protected route)
+// router.post('/add-announcement', authMiddleware, async (req, res) => {
+//   try {
+//     const { std, className, publishTo, subject, message, status } = req.body;
+
+//     const newAnnouncement = new Announcement({
+//       std,
+//       className,
+//       publishTo,
+//       subject,
+//       message,
+//       status,
+//       senderId: req.user.userId, // Make sure this matches your JWT payload
+//     });
+
+//     await newAnnouncement.save();
+//     res.status(201).json(newAnnouncement);
+//   } catch (err) {
+//     console.error("Error saving announcement:", err);
+//     res.status(400).json({ error: err.message });
+//   }
+// });
+
+
+// --- Inside routes/announcementRoutes.js POST method ---
 router.post('/add-announcement', authMiddleware, async (req, res) => {
   try {
     const { std, className, publishTo, subject, message, status } = req.body;
@@ -25,16 +49,15 @@ router.post('/add-announcement', authMiddleware, async (req, res) => {
       std,
       className,
       publishTo,
-      subject,
-      message,
+      title: subject,       // Map 'subject' from flutter to 'title' in DB
+      description: message, // Map 'message' from flutter to 'description' in DB
       status,
-      senderId: req.user.userId, // Make sure this matches your JWT payload
+      senderId: req.user.userId,
     });
 
     await newAnnouncement.save();
     res.status(201).json(newAnnouncement);
   } catch (err) {
-    console.error("Error saving announcement:", err);
     res.status(400).json({ error: err.message });
   }
 });
