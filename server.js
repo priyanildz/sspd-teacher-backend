@@ -151,11 +151,21 @@ const io = new Server(server, {
 
 connectDB();
 
+// app.use(cors({
+//   origin: "*", 
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization", "auth", "username", "role"]
+// }));
+
+
+// ✅ Comprehensive CORS setup for local development
 app.use(cors({
-  origin: "*", 
+  origin: "*", // Allows any origin to access the API (essential for Flutter Web local dev)
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "auth", "username", "role"]
 }));
+
+
 app.use(bodyParser.json());
 
 app.use("/api/events", (req, res, next) => {
@@ -193,9 +203,16 @@ io.on("connection", (socket) => {
 
 
 // ✅ ONLY listen if we are NOT on Vercel
+// if (process.env.NODE_ENV !== 'production') {
+//   server.listen(PORT, () => {
+//     console.log(`✅ Local Server running on port ${PORT}`);
+//   });
+// }
+
+
 if (process.env.NODE_ENV !== 'production') {
-  server.listen(PORT, () => {
-    console.log(`✅ Local Server running on port ${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => { // ✅ Added '0.0.0.0'
+    console.log(`✅ Local Server running on http://192.168.1.33:${PORT}`);
   });
 }
 
