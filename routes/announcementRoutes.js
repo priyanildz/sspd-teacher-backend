@@ -142,7 +142,7 @@ router.get('/get-announcement', async (req, res) => {
       res.json(announcements);
     } catch (e) {
       console.error("Failed to load announcements:", e);
-      res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: e?.message || "Server error" });
     }
 });
   
