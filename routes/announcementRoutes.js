@@ -145,6 +145,27 @@ router.get('/get-announcement', async (req, res) => {
     res.status(500).json({ error: e?.message || "Server error" });
     }
 });
+
+
+// PUT: Update announcement status (e.g., sending a draft)
+router.put('/update-status/:id', authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const updatedAnnouncement = await Announcement.findByIdAndUpdate(
+      req.params.id,
+      { status: status },
+      { new: true }
+    );
+
+    if (!updatedAnnouncement) {
+      return res.status(404).json({ error: "Announcement not found" });
+    }
+
+    res.json(updatedAnnouncement);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
   
 
 module.exports = router;
