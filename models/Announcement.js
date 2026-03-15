@@ -69,7 +69,7 @@ const announcementSchema = new mongoose.Schema(
     },
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'teacher', // Adjust this ref if your teacher model name is different
+      ref: 'staff', // Matches the exported model name in User.js
       required: true,
     },
     schedule: {
