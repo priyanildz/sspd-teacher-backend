@@ -51,7 +51,7 @@ const announcementSchema = new mongoose.Schema(
     },
     publishTo: {
       type: String,
-      enum: ["Principal", "Teacher", "Finance", "Admin", "All"],
+      enum: ["Principal", "Teacher", "Finance", "Admin", "All", "Student"],
       default: "Admin",
     },
     priority: {
